@@ -1,0 +1,14 @@
+{
+  "name": "bugsonic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite src/the-wall",
+    "build": "vite build src/the-wall",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
