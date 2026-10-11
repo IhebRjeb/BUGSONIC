@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>THE WALL: bug synth</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#0c0b0a;--fg:#e9e2d6;--mut:#8a8378;--ac:#ff6b3d;--line:#2a2724}
+:root:not([data-theme="light"]){color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.4 "Helvetica Neue",Arial,sans-serif;display:flex;flex-direction:column}
+header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
+h1{font:600 16px/1 "Courier New",monospace;margin:0 auto 0 0}
+button,label.b{background:none;color:var(--fg);border:1px solid var(--mut);border-radius:20px;padding:6px 12px;font:inherit;cursor:pointer}
+button.on{background:var(--ac);border-color:var(--ac);color:#000}
+button:focus-visible,label.b:focus-within{outline:2px solid var(--ac);outline-offset:2px}
+input[type=file]{display:none}
+#arch{display:flex;gap:6px;padding:6px 12px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.th{width:36px;height:48px;flex:none;border:1px solid var(--line);cursor:pointer;padding:0}
+.th.s{border-color:var(--ac);outline:1px solid var(--ac)}
+main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+canvas#c{max-width:100%;max-height:100%;border:1px solid var(--line);touch-action:none;cursor:crosshair}
+footer{padding:6px 12px;color:var(--mut);font:12px "Courier New",monospace;border-top:1px solid var(--line);overflow-wrap:anywhere}
+#ev{color:var(--ac)}
+</style>
+</head>
+<body>
+<header>
+  <h1>THE WALL / bugs</h1>
+  <button id="go">Start sound</button>
+  <button id="more">+ bug</button>
+  <button id="new">New wall</button>
+  <button id="wsb">WS out</button>
+  <label class="b">Add photo<input id="up" type="file" accept="image/*"></label>
+</header>
+<div id="arch" aria-label="Wall archive"></div>
+<main><canvas id="c" width="480" height="640"></canvas></main>
+<footer><div id="info">Tap Start sound. Drag on the wall to scratch a crack. Keys 1-9 switch walls.</div><div id="ev"></div></footer>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
