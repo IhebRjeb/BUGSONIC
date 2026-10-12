@@ -13,14 +13,40 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:5173`. No other dependencies.
+Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `ws` is a dev dependency used only by the local bridge.
 
 ## Use it
 
-1. **Start sound** (requires a tap — browser policy).
-2. **Add photo** to load a wall image. Keys `1`-`9` switch walls.
+1. **Wake the wall** to start browser sound (requires a tap — browser policy).
+2. **Bring your own** to load a wall image. Keys `1`-`9` switch walls.
 3. **Drag** on the wall to scratch a crack. Bugs steer toward your pointer and click on cracks.
-4. `+ bug` / key `b` adds a bug (max 8). `n` generates a new wall. `space` toggles sound.
+4. **Introduce a creature** / key `b` adds a bug (max 8). `n` generates a new wall. `space` toggles sound.
+
+## External out
+
+Every encounter can leave the browser. Browser sound and external out are independent: silence the browser and let TouchDesigner, Hydra, Max or a synth be the voice.
+
+```
+npm run bridge        # ws://127.0.0.1:9980  →  OSC udp://127.0.0.1:7000
+```
+
+Then press **Connect** in *04 / External out*. The panel shows link state, messages sent, listeners on the bridge, the OSC target and a live signal log. It reconnects on its own if the bridge restarts.
+
+Bridge options: `--port 9980`, `--osc-host 127.0.0.1`, `--osc-port 7000`, `--no-osc`, `--allow-origin <url>` (repeatable), `--verbose`.
+
+**TouchDesigner**: *OSC In DAT* on port `7000` for `/bugsonic/note` and `/bugsonic/crack`. *OSC In CHOP* on port `7000` for the `/bugsonic/bug` and `/bugsonic/energy` channels (turn on **Stream creature positions**). Alternatively, use a *WebSocket DAT* to `127.0.0.1:9980` and parse the JSON in its callbacks.
+
+**Hydra**: start the bridge with `--allow-origin https://hydra.ojack.xyz`, then:
+
+```js
+let hit = 0
+const ws = new WebSocket('ws://127.0.0.1:9980')
+ws.onmessage = (m) => { if (JSON.parse(m.data).kind === 'event') hit = 1 }
+update = () => { hit *= 0.9 }
+osc(10, 0.1, () => hit * 2).kaleid(4).out()
+```
+
+Full message and OSC reference: [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md).
 
 ## How it works
 
@@ -35,7 +61,7 @@ wall photo -> image analysis -> tuning system -> bug sampling -> FM synthesis ->
 | **Bugs** | 4-8 autonomous agents with six legs. Edge = FM note, dark crack = filtered noise click, flat paint = silence. Per-bug voice identity, stereo panning from position, rhythm grid quantisation |
 | **Audio** | FM synthesis (2-operator), per-bug filter + envelope. Effects chain: distortion, chorus, tempo-synced delay, algorithmic reverb, master compressor |
 | **Feedback** | FFT energy speeds bugs up, bass pulls them down, the spectrum shears the live wall horizontally, wall slowly heals toward the original |
-| **Events** | Every sound emits `{wall, bug, type, freq, brightness, edge, x, y}` — see [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md) |
+| **Events** | Every encounter emits a protocol-v1 message (`event`, `wall`, `state`) over WebSocket, forwarded to OSC by the bridge — see [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md) |
 
 ## Repo layout
 
@@ -48,9 +74,11 @@ src/the-wall/
   bug/                Bug class, colony management
   audio/              engine, FM synthesis, effects chain, rhythm grid
   feedback/           animation loop, spectrum shearing
-  events/             event emitter, WebSocket adapter
+  events/             protocol v1 messages, resilient WebSocket link
   input/              pointer and keyboard handlers
-  ui/                 button/control wiring
+  ui/                 controls, dashboard/telemetry, stylesheet
+tools/
+  bridge.js           WebSocket hub + OSC/UDP forwarder (npm run bridge)
 docs/
   VISION.md           artistic vision
   ARCHITECTURE.md     system architecture

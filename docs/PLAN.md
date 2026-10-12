@@ -44,7 +44,7 @@
 4. Full-frame pixel read every 3 frames may stutter on weak devices.
 5. Photos are cover-cropped to 480x640, losing detail on non-portrait images.
 6. No wall metadata (location, GPS).
-7. No Strudel integration, no OSC bridge, no MIDI output.
+7. No Strudel integration, no MIDI output. OSC goes through the local bridge only.
 
 ## Next steps
 
@@ -61,8 +61,10 @@
 
 ### External integration
 - [ ] Strudel layer that follows wall scale and tempo
-- [ ] OSC bridge (small Node script)
-- [ ] WebSocket adapter tested with TouchDesigner
+- [x] OSC bridge (`tools/bridge.js`, `npm run bridge`)
+- [x] Protocol v1: `event`, `wall`, `state`, silent external mode, auto-reconnect
+- [ ] Test the bridge with a real TouchDesigner and Hydra patch
+- [ ] Web MIDI output
 
 ### Later
 - Community wall uploads (public API)

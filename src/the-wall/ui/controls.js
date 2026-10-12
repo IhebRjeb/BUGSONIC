@@ -2,24 +2,42 @@
 // BUGSONIC / THE WALL — UI button handlers
 // ---------------------------------------------------------------------------
 
-import { toggle as toggleAudio } from '../audio/engine.js';
+import { toggle as toggleAudio, setLevel } from '../audio/engine.js';
 import { addBug } from '../bug/colony.js';
 import { newWall, loadPhoto } from '../wall/archive.js';
-import { connectWS, disconnectWS, isWSConnected } from '../events/emitter.js';
+import { connect, disconnect, isLinkWanted, ping as sendPing, setStateStream } from '../events/emitter.js';
 
 /**
  * Wire up all header buttons.
  * @param {{ go, more, newBtn, wsb, up }} els — button elements
  */
 export function initControls(els) {
-  const { go, more, newBtn, wsb, up } = els;
+  const { go, more, newBtn, wsb, up, volume, volumeValue, focus, uploadStatus, wsUrl, ping, stream } = els;
 
   // Sound toggle
-  go.onclick = () => {
-    const state = toggleAudio();
-    go.classList.toggle('on', state === 'on');
-    go.textContent = state === 'on' ? 'Sound on' : 'Start sound';
+  go.onclick = async () => {
+    go.disabled = true;
+    try {
+      await toggleAudio();
+    } catch {
+      uploadStatus.textContent = 'Audio could not start. Try waking the wall again.';
+    } finally {
+      go.disabled = false;
+    }
   };
+
+  volume.oninput = () => {
+    setLevel(Number(volume.value) / 100);
+    volumeValue.textContent = `${volume.value}%`;
+  };
+  volume.oninput();
+
+  const toggleFocus = () => {
+    const active = document.body.classList.toggle('focus-mode');
+    focus.setAttribute('aria-pressed', String(active));
+    focus.textContent = active ? 'Return to instrument ↙' : 'Focus view ↗';
+  };
+  focus.onclick = toggleFocus;
 
   // Add bug
   more.onclick = () => addBug();
@@ -27,27 +45,43 @@ export function initControls(els) {
   // New generated wall
   newBtn.onclick = () => newWall();
 
-  // WebSocket toggle
+  // External link
   wsb.onclick = () => {
-    if (isWSConnected()) {
-      disconnectWS();
-      wsb.classList.remove('on');
+    if (isLinkWanted()) {
+      disconnect();
       return;
     }
-    const url = prompt('WebSocket URL (works when this file runs locally)', 'ws://localhost:9980');
-    if (!url) return;
-    const ok = connectWS(url);
-    wsb.classList.toggle('on', ok);
+    if (!connect(wsUrl.value)) wsUrl.focus();
   };
+  wsUrl.onkeydown = (e) => {
+    if (e.key === 'Enter' && !isLinkWanted()) wsb.click();
+  };
+  ping.onclick = () => sendPing();
+  stream.onchange = () => setStateStream(stream.checked);
+  setStateStream(stream.checked);
 
   // Photo upload
-  up.onchange = (e) => {
+  up.onchange = async (e) => {
     const f = e.target.files[0];
-    if (f) loadPhoto(f);
+    if (!f) return;
+    up.disabled = true;
+    uploadStatus.textContent = 'Reading the surface…';
+    try {
+      await loadPhoto(f);
+      uploadStatus.textContent = `${f.name} is now a playable surface. Saved for this session only.`;
+    } catch {
+      uploadStatus.textContent = 'This image could not be read. Try a JPG, PNG or WebP.';
+    } finally {
+      up.disabled = false;
+      up.value = '';
+    }
   };
 
   // Return a toggleSound function for keyboard binding
   return {
     toggleSound: () => go.click(),
+    exitFocus: () => {
+      if (document.body.classList.contains('focus-mode')) toggleFocus();
+    },
   };
 }

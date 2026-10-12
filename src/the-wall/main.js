@@ -5,18 +5,18 @@
 // events, input, and UI controls.
 // ---------------------------------------------------------------------------
 
-import { W, H } from './config.js';
-import { init as initArchive, newWall, getTuning } from './wall/archive.js';
+import { init as initArchive, newWall } from './wall/archive.js';
 import { mkCanvas } from './wall/Wall.js';
 import { init as initColony } from './bug/colony.js';
 import { isStarted } from './audio/engine.js';
 import { play, click } from './audio/synth.js';
 import { grid } from './audio/grid.js';
-import { init as initEmitter, emit } from './events/emitter.js';
+import { init as initEmitter, emit, emitWall, emitState, isExternalActive } from './events/emitter.js';
 import { init as initLoop, frame } from './feedback/loop.js';
 import { initPointer } from './input/pointer.js';
 import { initKeyboard } from './input/keyboard.js';
 import { initControls } from './ui/controls.js';
+import { createDashboard } from './ui/dashboard.js';
 
 // --- DOM ---
 const $ = (id) => document.getElementById(id);
@@ -32,6 +32,7 @@ const liveCtx = liveCv.getContext('2d', { willReadFrequently: true });
 
 // Shared pointer state
 const ptr = { d: 0, x: 0, y: 0 };
+const dashboard = createDashboard();
 
 // --- Init modules ---
 
@@ -41,18 +42,22 @@ initArchive({
   infoEl:   $('info'),
   wallCtx,
   liveCtx,
-  onSelect: null,   // no extra callback needed
+  onSelect: (wall) => {
+    dashboard.select(wall);
+    emitWall(wall);
+  },
 });
 
 // Bugs
 initColony();
 
 // Events
-initEmitter({ evEl: $('ev') });
+initEmitter({ onStatus: dashboard.setLink });
 
 // Audio interface passed to bugs (avoids circular imports)
 const audioAPI = {
   get started() { return isStarted(); },
+  get external() { return isExternalActive(); },
   play,
   click,
   grid,
@@ -67,6 +72,10 @@ initLoop({
   ptr,
   audioAPI,
   emitFn: emit,
+  onFrame: (t, bands, energy) => {
+    dashboard.update(t, bands);
+    emitState(t, energy);
+  },
 });
 
 // Pointer input (scratch cracks)
@@ -79,6 +88,13 @@ const actions = initControls({
   newBtn: $('new'),
   wsb:    $('wsb'),
   up:     $('up'),
+  volume: $('volume'),
+  volumeValue: $('volume-value'),
+  focus: $('focus'),
+  uploadStatus: $('upload-status'),
+  wsUrl: $('ws-url'),
+  ping: $('ping'),
+  stream: $('stream-state'),
 });
 
 // Keyboard
