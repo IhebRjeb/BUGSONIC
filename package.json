@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite src/the-wall",
-    "build": "vite build src/the-wall",
+    "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
     "bridge": "node tools/bridge.js"
   },
