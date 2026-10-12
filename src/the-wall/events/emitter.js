@@ -9,6 +9,7 @@ import { getCurrent } from '../wall/archive.js';
 import { getBugs } from '../bug/colony.js';
 import { rgbAt } from '../wall/analysis.js';
 import * as protocol from './protocol.js';
+import { connectionHelp, connectionProblem } from './connection.js';
 
 const STATE_INTERVAL_MS = 100;
 const MAX_BUFFERED_BYTES = 64 * 1024;
@@ -93,7 +94,7 @@ function open() {
     next = new WebSocket(url);
   } catch {
     wanted = false;
-    onStatus('error', 'The browser blocked this address. HTTPS pages need wss://.');
+    onStatus('error', `The browser blocked this connection. ${connectionHelp()}`);
     return;
   }
   sock = next;
@@ -135,16 +136,18 @@ function closeSilently() {
  */
 export function connect(address) {
   const value = String(address).trim();
-  if (!/^wss?:\/\/[^\s]+$/i.test(value)) {
-    onStatus('error', 'Enter a ws:// or wss:// address.');
+  const problem = connectionProblem(value);
+  if (problem) {
+    onStatus('error', problem);
     return false;
   }
+  clearTimeout(retryTimer);
   closeSilently();
   url = value;
   wanted = true;
   retryDelay = RETRY_MIN_MS;
   open();
-  return true;
+  return wanted;
 }
 
 export function disconnect() {
