@@ -48,6 +48,7 @@ export class Bug {
   step(t, energy, low, ptr, audio, T, emit) {
     // Movement
     const sp = 0.8 + energy * 3.5;
+    this.speed = sp;
     this.a += Math.sin(t * 0.001 * (this.id + 1) + this.id) * 0.05 + R(-0.06, 0.06);
 
     // Pointer attraction
@@ -84,11 +85,12 @@ export class Bug {
     this.l = lumAt(this.x, this.y);
     this.g = grad(this.x, this.y);
 
-    // Sound triggers
-    if (audio.started && t - this.last > SOUND_COOLDOWN) {
+    // Sound triggers — encounters still happen when only external out is live
+    const sounding = audio.started;
+    if ((sounding || audio.external) && t - this.last > SOUND_COOLDOWN) {
       if (this.l < CRACK_LUM) {
         // Crack — noise click
-        audio.click(audio.grid(T));
+        if (sounding) audio.click(audio.grid(T));
         emit(this, 'crack', 0);
         this.last  = t;
         this.flash = 1;
@@ -97,7 +99,7 @@ export class Bug {
         const [r, , b] = rgbAt(this.x, this.y);
         const f   = noteFreq(this.l, T);
         const hue = (r - b + 255) / 510;
-        audio.play(this, f, this.g, hue, audio.grid(T));
+        if (sounding) audio.play(this, f, this.g, hue, audio.grid(T));
         emit(this, 'note', f);
         this.last  = t;
         this.flash = 1;
@@ -111,21 +113,35 @@ export class Bug {
    * Draw the bug (body + legs) onto a 2d context.
    */
   draw(ctx) {
-    ctx.strokeStyle = ctx.fillStyle = `hsl(${this.hue},90%,${60 + this.flash * 30}%)`;
-    ctx.lineWidth = 1.2;
+    const color = ['#d6edff', '#f0e4c9', '#b7d4ec', '#dae0b3'][this.id % 4];
+    ctx.save();
+    ctx.strokeStyle = ctx.fillStyle = color;
+    ctx.lineWidth = .85;
+    ctx.shadowColor = '#182630';
+    ctx.shadowBlur = 3;
 
     for (const l of this.legs) {
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
-      ctx.lineTo(l.x, l.y);
+      const bend = (this.id % 2 ? 1 : -1) * 5;
+      ctx.quadraticCurveTo((this.x + l.x) / 2 + bend, (this.y + l.y) / 2 - bend, l.x, l.y);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(l.x, l.y, 2.5, 0, Math.PI * 2);
+      ctx.arc(l.x, l.y, 1.5, 0, Math.PI * 2);
       ctx.stroke();
     }
 
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.a);
     ctx.beginPath();
-    ctx.arc(this.x, this.y, 4 + this.flash * 6, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 5 + this.flash * 3, 2.5 + this.flash, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (this.flash > .08) {
+      ctx.globalAlpha = this.flash * .6;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 12 + (1 - this.flash) * 21, 10 + (1 - this.flash) * 21, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 }

@@ -37,12 +37,18 @@ export class Wall {
     this.cv.getContext('2d').drawImage(source, 0, 0);
 
     // Thumbnail (36x48)
-    this.th       = document.createElement('canvas');
-    this.th.width = 36;
-    this.th.height = 48;
+    this.th       = document.createElement('button');
+    this.th.type = 'button';
     this.th.className = 'th';
-    this.th.title = this.id;
-    this.th.getContext('2d').drawImage(this.cv, 0, 0, 36, 48);
+    this.th.title = `${this.id} · ${name}`;
+    this.th.setAttribute('aria-label', `Select ${this.id}: ${name}`);
+    this.th.setAttribute('aria-pressed', 'false');
+    const thumbnail = document.createElement('canvas');
+    thumbnail.width = 36;
+    thumbnail.height = 48;
+    thumbnail.setAttribute('aria-hidden', 'true');
+    thumbnail.getContext('2d').drawImage(this.cv, 0, 0, 36, 48);
+    this.th.appendChild(thumbnail);
 
     // Features and tuning — set when the wall is selected
     this.f = null;

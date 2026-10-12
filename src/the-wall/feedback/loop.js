@@ -25,6 +25,7 @@ let wallCv     = null;
 let ptr        = null;
 let audioAPI   = null;
 let emitFn     = null;
+let onFrame    = null;
 
 /**
  * Initialise the loop with required references.
@@ -37,6 +38,7 @@ export function init(opts) {
   ptr        = opts.ptr;
   audioAPI   = opts.audioAPI;
   emitFn     = opts.emitFn;
+  onFrame    = opts.onFrame;
 }
 
 /**
@@ -58,12 +60,13 @@ export function frame(t) {
   displayCtx.drawImage(liveCv, 0, 0);
 
   // Darkness overlay (inversely proportional to energy)
-  displayCtx.fillStyle = `rgba(0,0,0,${0.25 + (1 - energy) * 0.15})`;
+  displayCtx.fillStyle = `rgba(0,0,0,${0.04 + (1 - energy) * 0.06})`;
   displayCtx.fillRect(0, 0, W, H);
 
   // Step and draw bugs
   stepAll(t, energy, low, ptr, audioAPI, T, emitFn);
   drawAll(displayCtx);
+  onFrame?.(t, bands, energy);
 
   requestAnimationFrame(frame);
 }

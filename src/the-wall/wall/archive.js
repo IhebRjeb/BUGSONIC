@@ -57,7 +57,10 @@ export function select(w) {
   liveCtx.drawImage(w.cv, 0, 0);
   w.analyse(liveCtx);
 
-  walls.forEach(x => x.th.classList.toggle('s', x === w));
+  walls.forEach(x => {
+    x.th.classList.toggle('s', x === w);
+    x.th.setAttribute('aria-pressed', String(x === w));
+  });
 
   const f = w.f;
   const T = w.T;
@@ -81,15 +84,28 @@ export function newWall() {
  * Load a photo file into the archive.
  */
 export function loadPhoto(file) {
-  const im = new Image();
-  im.onload = () => {
-    const c   = mkCanvas();
-    const ctx = c.getContext('2d');
-    const s   = Math.max(W / im.width, H / im.height);
-    ctx.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s);
-    addWall(c, file.name);
-  };
-  im.src = URL.createObjectURL(file);
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    const url = URL.createObjectURL(file);
+    im.onload = () => {
+      try {
+        const c = mkCanvas();
+        const ctx = c.getContext('2d');
+        const s = Math.max(W / im.width, H / im.height);
+        ctx.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s);
+        resolve(addWall(c, file.name));
+      } catch (error) {
+        reject(error);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+    im.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('This image could not be read. Try a JPG, PNG or WebP.'));
+    };
+    im.src = url;
+  });
 }
 
 /**

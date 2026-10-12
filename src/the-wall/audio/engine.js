@@ -13,6 +13,7 @@ let master   = null;   // master gain -> effects chain input
 let analyser = null;
 let fdata    = null;
 let started  = false;
+let level = MASTER_GAIN;
 
 /**
  * Create the AudioContext and wire the master chain.
@@ -23,7 +24,7 @@ export function initAudio() {
 
   // Master gain sits before the effects chain
   master = ac.createGain();
-  master.gain.value = MASTER_GAIN;
+  master.gain.value = level;
 
   // Build the full effects chain and get its entry point
   const chain = buildEffectsChain(ac);
@@ -38,17 +39,23 @@ export function initAudio() {
 /**
  * Toggle audio on/off. Returns the new state string.
  */
-export function toggle() {
+export async function toggle() {
   if (!started) {
     initAudio();
-    return 'on';
-  }
-  if (ac.state === 'running') {
-    ac.suspend();
+    await ac.resume();
+    return ac.state === 'running' ? 'on' : 'off';
+  } else if (ac.state === 'running') {
+    await ac.suspend();
     return 'off';
   }
-  ac.resume();
-  return 'on';
+  await ac.resume();
+  return ac.state === 'running' ? 'on' : 'off';
+}
+
+export function setLevel(value) {
+  if (!Number.isFinite(value)) return;
+  level = Math.max(0, Math.min(.7, value));
+  if (master) master.gain.setTargetAtTime(level, ac.currentTime, .03);
 }
 
 /**
@@ -76,4 +83,4 @@ export function readFFT() {
 export function getContext()   { return ac; }
 export function getMaster()    { return master; }
 export function getDelay()     { return getDelaySend(); }
-export function isStarted()    { return started; }
+export function isStarted()    { return started && ac.state === 'running'; }
