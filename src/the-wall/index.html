@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#c3c7bc">
   <meta name="description" content="A living audiovisual instrument. Small creatures read a surface, turn its traces into sound, and send every encounter to your own tools.">
   <title>BUGSONIC — The Wall / living instrument</title>
+  <link rel="icon" type="image/svg+xml" href="./ui/favicon.svg">
   <link rel="stylesheet" href="./ui/style.css">
 </head>
 <body>
@@ -88,6 +89,12 @@
             <button id="wsb" class="link-button" aria-pressed="false">Connect</button>
           </div>
           <p id="connection-status" class="control-description" role="status">Start the bridge with <code>npm run bridge</code>, then connect.</p>
+          <details class="control-description">
+            <summary>Connecting from the hosted site?</summary>
+            <p>Vercel hosts the instrument, not the OSC bridge. In a local checkout on your computer, start (or restart) the bridge with:</p>
+            <p><code id="bridge-command">npm run bridge</code></p>
+            <p>127.0.0.1 means this device. Allow local-network access if your browser asks. If HTTPS blocks the local connection, run the instrument locally, or use a trusted TLS bridge at a wss:// address. Changing ws:// to wss:// alone does not enable TLS.</p>
+          </details>
           <p class="control-description">Browser sound and external out are independent. Silence the browser and let your own instruments speak.</p>
         </div>
         <div class="external-col">

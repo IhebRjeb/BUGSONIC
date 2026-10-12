@@ -3,6 +3,7 @@ import { getBugs } from '../bug/colony.js';
 import { getWalls } from '../wall/archive.js';
 import { isStarted } from '../audio/engine.js';
 import { getStats, isLinkWanted } from '../events/emitter.js';
+import { bridgeCommand, connectionHelp } from '../events/connection.js';
 
 const UI_INTERVAL_MS = 80;
 const SPECTRUM_BARS = 44;
@@ -10,10 +11,10 @@ const COLORS = { idle: '#a3a99d', low: '#1b1f1c', high: '#1c557d' };
 
 const LINK_LABELS = { off: 'OFF', connecting: 'CONNECTING', live: 'LIVE', retrying: 'RETRYING', error: 'CHECK ADDRESS' };
 const LINK_MESSAGES = {
-  off: () => 'Link closed. Start the bridge with npm run bridge, then connect.',
+  off: () => `Start the bridge on your computer with ${bridgeCommand()}, then connect.`,
   connecting: (d) => `Reaching ${d}…`,
   live: (d) => `Live on ${d}. Every encounter now leaves the browser.`,
-  retrying: (d) => `Link lost. Trying again in ${d}s — disconnect to stop.`,
+  retrying: (d) => `Bridge unreachable. Trying again in ${d}s — disconnect to stop. ${connectionHelp()}`,
   error: (d) => d,
 };
 
@@ -22,6 +23,8 @@ export function createDashboard() {
     'colony-dots', 'surface-state', 'audio-state', 'go', 'sound-label', 'spectrum', 'fps', 'ev-rate',
     'link-state', 'connection-status', 'wsb', 'ws-url', 'ping', 'tx-count', 'listeners', 'osc-target', 'signal-log'];
   const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+  document.getElementById('bridge-command').textContent = bridgeCommand();
+  els['connection-status'].textContent = LINK_MESSAGES.off();
   const spectrum = els.spectrum.getContext('2d');
   const dots = Array.from({ length: MAX_BUGS }, () => {
     const dot = document.createElement('span');
