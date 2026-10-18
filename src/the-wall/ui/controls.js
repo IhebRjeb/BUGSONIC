@@ -3,6 +3,9 @@
 // ---------------------------------------------------------------------------
 
 import { toggle as toggleAudio, setLevel } from '../audio/engine.js';
+import { setLayer } from '../audio/synth.js';
+import { setFeedback } from '../feedback/loop.js';
+import { setInspect } from './inspect.js';
 import { addBug } from '../bug/colony.js';
 import { newWall, loadPhoto } from '../wall/archive.js';
 import { connect, disconnect, isLinkWanted, ping as sendPing, setStateStream } from '../events/emitter.js';
@@ -10,9 +13,18 @@ import { connect, disconnect, isLinkWanted, ping as sendPing, setStateStream } f
 /**
  * Wire up all header buttons.
  * @param {{ go, more, newBtn, wsb, up }} els — button elements
+ * @param {() => void} restart — replay the current wall from its seed
  */
-export function initControls(els) {
+export function initControls(els, restart) {
   const { go, more, newBtn, wsb, up, volume, volumeValue, focus, uploadStatus, wsUrl, ping, stream } = els;
+
+  // Comparison: layers, feedback, inspection, restart
+  els.noteLayer.onchange = () => setLayer('note', els.noteLayer.checked);
+  els.crackLayer.onchange = () => setLayer('crack', els.crackLayer.checked);
+  els.feedback.onchange = () => setFeedback(els.feedback.checked);
+  els.inspect.onchange = () => setInspect(els.inspect.checked);
+  els.restart.onclick = restart;
+  for (const el of [els.noteLayer, els.crackLayer, els.feedback, els.inspect]) el.onchange();
 
   // Sound toggle
   go.onclick = async () => {
@@ -80,6 +92,7 @@ export function initControls(els) {
   // Return a toggleSound function for keyboard binding
   return {
     toggleSound: () => go.click(),
+    restart,
     exitFocus: () => {
       if (document.body.classList.contains('focus-mode')) toggleFocus();
     },

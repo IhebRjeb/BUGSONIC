@@ -13,8 +13,20 @@ export const LEGS_PER_BUG   = 6;
 export const SOUND_COOLDOWN = 170;   // ms between sounds per bug
 
 // Image analysis thresholds
-export const CRACK_LUM      = 0.16;  // luminance below this = crack
 export const EDGE_GRAD      = 0.06;  // gradient above this  = edge
+export const EDGE_RELEASE   = 0.035; // must drop below this before the next edge counts
+export const RIDGE_RADIUS   = 5;     // px — ring used to compare a point with its surroundings
+export const RIDGE_DEPTH    = 0.1;   // darker than its ring by this = crack
+export const PULSE_STEPS    = 16;    // left-to-right image columns -> 16th-note steps
+export const SCORE_VERSION  = 2;     // bump when analysis or tuning changes what an image plays
+
+// Simulation and pulse scheduling
+export const SIM_HZ         = 60;    // fixed simulation steps per second
+export const SIM_MAX_STEPS  = 8;     // per frame; beyond this the clock drops time and re-anchors
+export const PULSE_LATENCY  = 0.06;  // s from simulation time to audio output
+export const PULSE_MAX_WAIT = 4;     // steps (one beat); encounters with no free active step rest
+export const PULSE_VOICES   = 3;     // sounds per step; further encounters move on or rest
+export const MARK_LIFE      = 0.9;   // s a sound-source mark stays visible
 
 // Tuning ranges
 export const EDO_MIN        = 5;
@@ -54,10 +66,8 @@ export const COMP_RATIO     = 4;
 export const COMP_ATTACK    = 0.003; // seconds
 export const COMP_RELEASE   = 0.15;  // seconds
 
-// Audio — synthesis
-export const FM_INDEX_MIN   = 0.5;   // modulation index range
+// Audio — synthesis (FM ratios and carriers come from the wall voice in tuning.js)
 export const FM_INDEX_MAX   = 6.0;
-export const FM_RATIO_SET   = [1, 1.5, 2, 3, 4, 5.04]; // carrier:modulator ratios
 export const NOTE_ATTACK    = 0.008; // seconds
 export const NOTE_DECAY_MIN = 0.2;   // seconds
 export const NOTE_DECAY_MAX = 1.6;   // seconds

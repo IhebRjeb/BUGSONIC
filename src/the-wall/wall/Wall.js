@@ -53,6 +53,7 @@ export class Wall {
     // Features and tuning — set when the wall is selected
     this.f = null;
     this.T = null;
+    this.seed = 0;
   }
 
   /**
@@ -60,7 +61,9 @@ export class Wall {
    * @param {CanvasRenderingContext2D} liveCtx — the live canvas context
    */
   analyse(liveCtx) {
-    this.f = features(liveCtx);
-    this.T = deriveTuning(this.f);
+    const { summary, hist, pulse, seed } = features(liveCtx);
+    this.f = summary;
+    this.T = deriveTuning(summary, hist, pulse);
+    this.seed = seed;
   }
 }

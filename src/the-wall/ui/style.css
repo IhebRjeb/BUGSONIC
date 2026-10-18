@@ -73,6 +73,10 @@ h2{font:inherit;margin:0;color:var(--ink);font-weight:700}
 input[type=range]{width:100%;height:18px;margin:6px 0;accent-color:var(--ink);cursor:pointer}
 #spectrum{width:100%;height:44px;display:block;margin-top:8px}
 .spectrum-labels{display:flex;justify-content:space-between;color:var(--muted);margin-top:6px}
+.compare{border:0;border-top:1px dashed var(--line);margin:18px 0 0;padding:14px 0 0;display:grid;gap:9px;min-width:0}
+.compare legend{padding:0 8px 0 0;margin:0}
+.compare .line-button{margin-top:4px}
+.compare .control-description{margin:4px 0 0}
 .colony-dots{display:flex;gap:10px;margin:0 0 14px}
 .colony-dot{width:10px;height:10px;border:1px solid var(--line-strong);border-radius:50%}
 .colony-dot.active{background:var(--ink);border-color:var(--ink)}

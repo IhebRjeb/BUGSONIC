@@ -4,7 +4,9 @@
 // See docs/EVENT_SPEC.md. Every message carries `v` and `kind`.
 // ---------------------------------------------------------------------------
 
-import { W, H } from '../config.js';
+import { W, H, SCORE_VERSION } from '../config.js';
+
+export { rgbToHue } from '../wall/analysis.js';
 
 export const PROTOCOL_VERSION = 1;
 
@@ -12,17 +14,6 @@ const TAU = Math.PI * 2;
 const r = (n, d = 3) => Math.round(n * 10 ** d) / 10 ** d;
 
 export const now = () => r(performance.now() / 1000);
-
-export function rgbToHue(red, green, blue) {
-  const mx = Math.max(red, green, blue);
-  const mn = Math.min(red, green, blue);
-  const d = mx - mn;
-  if (!d) return 0;
-  const h = mx === red ? ((green - blue) / d) % 6
-    : mx === green ? (blue - red) / d + 2
-    : (red - green) / d + 4;
-  return Math.round((h * 60 + 360) % 360);
-}
 
 export function hello() {
   return { v: PROTOCOL_VERSION, kind: 'hello', t: now(), source: 'bugsonic/the-wall', canvas: { w: W, h: H } };
@@ -56,10 +47,13 @@ export function wallMessage(wall) {
     kind: 'wall',
     t: now(),
     wall: wall.id,
+    score: SCORE_VERSION,
+    seed: wall.seed.toString(16).padStart(8, '0'),
     edo: wall.T.edo,
     root: wall.T.base,
     scale: wall.T.scale,
     tempo: wall.T.tempo,
+    pulse: wall.T.pulse,
     features: wall.f,
   };
 }

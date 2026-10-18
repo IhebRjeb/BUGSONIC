@@ -5,26 +5,29 @@
 // and triggers sounds based on what it finds.
 // ---------------------------------------------------------------------------
 
-import { W, H, LEGS_PER_BUG, SOUND_COOLDOWN, CRACK_LUM, EDGE_GRAD } from '../config.js';
-import { grad, lumAt, rgbAt } from '../wall/analysis.js';
+import { W, H, LEGS_PER_BUG, SOUND_COOLDOWN, EDGE_GRAD, EDGE_RELEASE, RIDGE_DEPTH, PULSE_LATENCY } from '../config.js';
+import { grad, lumAt, ridgeAt, colourAt } from '../wall/analysis.js';
 import { noteFreq } from '../wall/tuning.js';
-
-const R = (a, b) => a + Math.random() * (b - a);
 
 export class Bug {
   /**
    * @param {number} id — unique bug index
+   * @param {() => number} rng — seeded random source in [0, 1)
    */
-  constructor(id) {
+  constructor(id, rng = Math.random) {
     this.id    = id;
-    this.x     = R(60, W - 60);
-    this.y     = R(60, H - 60);
-    this.a     = R(0, Math.PI * 2);   // heading angle
-    this.last  = 0;                    // last sound timestamp
+    this.rng   = rng;
+    this.x     = this.r(60, W - 60);
+    this.y     = this.r(60, H - 60);
+    this.a     = this.r(0, Math.PI * 2);   // heading angle
+    this.next  = { note: 0, crack: 0 }; // earliest simulation time for the next sound of each kind (ms)
     this.hue   = (id * 70) % 360;
     this.flash = 0;                    // visual flash on sound trigger
+    this.flashAt = Infinity;           // simulation time (ms) when the scheduled sound is heard
     this.l     = 0;                    // luminance under bug
     this.g     = 0;                    // gradient under bug
+    this.edgeArmed  = true;
+    this.crackArmed = true;
 
     // Legs — 6 endpoints that follow the body with IK-like stepping
     this.legs = Array.from({ length: LEGS_PER_BUG }, (_, i) => ({
@@ -34,40 +37,25 @@ export class Bug {
     }));
   }
 
+  r(a, b) { return a + this.rng() * (b - a); }
+
   /**
-   * Move the bug, sample the wall, and decide whether to trigger a sound.
+   * One fixed simulation step (1/60 s): move, sample the wall, maybe sound.
    *
-   * @param {number} t       — current timestamp (ms)
-   * @param {number} energy  — overall FFT energy 0-1
-   * @param {number} low     — bass energy 0-1
+   * @param {number} t       — simulation time (ms)
+   * @param {number} energy  — overall FFT energy 0-1 (0 when feedback is off)
+   * @param {number} low     — bass energy 0-1 (0 when feedback is off)
    * @param {{ d: number, x: number, y: number }} ptr — pointer state
-   * @param {{ play, click, grid }} audio — audio interface
-   * @param {{ edo, base, scale, tempo }} T — current tuning
+   * @param {{ play, click, next, time, mark, started, external }} audio — audio interface
+   * @param {{ edo, base, scale, tempo, pulse, voice }} T — current tuning
    * @param {function} emit  — event emitter
    */
   step(t, energy, low, ptr, audio, T, emit) {
-    // Movement
-    const sp = 0.8 + energy * 3.5;
-    this.speed = sp;
-    this.a += Math.sin(t * 0.001 * (this.id + 1) + this.id) * 0.05 + R(-0.06, 0.06);
-
-    // Pointer attraction
-    if (ptr.d) {
-      const want = Math.atan2(ptr.y - this.y, ptr.x - this.x);
-      this.a += Math.sin(want - this.a) * 0.08;
-    }
-
-    this.x += Math.cos(this.a) * sp;
-    this.y += Math.sin(this.a) * sp + low * 0.8;
-
-    // Boundary bounce
-    if (this.x < 10 || this.x > W - 10) {
-      this.a = Math.PI - this.a;
-      this.x = Math.max(10, Math.min(W - 10, this.x));
-    }
-    if (this.y < 10 || this.y > H - 10) {
-      this.a = -this.a;
-      this.y = Math.max(10, Math.min(H - 10, this.y));
+    // Sample at most ~1px apart so thin cracks and edges are never stepped over.
+    const n = Math.max(1, Math.ceil(0.8 + energy * 3.5));
+    for (let s = 0; s < n; s++) {
+      this.move(t, energy, low, ptr, 1 / n);
+      this.sense(t, audio, T, emit);
     }
 
     // Leg IK
@@ -81,32 +69,70 @@ export class Bug {
       }
     }
 
-    // Sample the wall
-    this.l = lumAt(this.x, this.y);
-    this.g = grad(this.x, this.y);
+    if (t >= this.flashAt) {
+      this.flash = 1;
+      this.flashAt = Infinity;
+    }
+    this.flash *= 0.9;
+  }
 
-    // Sound triggers — encounters still happen when only external out is live
-    const sounding = audio.started;
-    if ((sounding || audio.external) && t - this.last > SOUND_COOLDOWN) {
-      if (this.l < CRACK_LUM) {
-        // Crack — noise click
-        if (sounding) audio.click(audio.grid(T));
-        emit(this, 'crack', 0);
-        this.last  = t;
-        this.flash = 1;
-      } else if (this.g > EDGE_GRAD) {
-        // Edge — pitched note
-        const [r, , b] = rgbAt(this.x, this.y);
-        const f   = noteFreq(this.l, T);
-        const hue = (r - b + 255) / 510;
-        if (sounding) audio.play(this, f, this.g, hue, audio.grid(T));
-        emit(this, 'note', f);
-        this.last  = t;
-        this.flash = 1;
-      }
+  move(t, energy, low, ptr, dt) {
+    const sp = 0.8 + energy * 3.5;
+    this.speed = sp;
+    this.a += (Math.sin(t * 0.001 * (this.id + 1) + this.id) * 0.05) * dt + this.r(-0.06, 0.06) * Math.sqrt(dt);
+
+    // Pointer attraction
+    if (ptr.d) {
+      const want = Math.atan2(ptr.y - this.y, ptr.x - this.x);
+      this.a += Math.sin(want - this.a) * 0.08 * dt;
     }
 
-    this.flash *= 0.9;
+    this.x += Math.cos(this.a) * sp * dt;
+    this.y += (Math.sin(this.a) * sp + low * 0.8) * dt;
+
+    // Boundary bounce
+    if (this.x < 10 || this.x > W - 10) {
+      this.a = Math.PI - this.a;
+      this.x = Math.max(10, Math.min(W - 10, this.x));
+    }
+    if (this.y < 10 || this.y > H - 10) {
+      this.a = -this.a;
+      this.y = Math.max(10, Math.min(H - 10, this.y));
+    }
+  }
+
+  // Sounds fire on entering an edge or crack, then re-arm once the bug leaves it.
+  sense(t, audio, T, emit) {
+    this.l = lumAt(this.x, this.y);
+    this.g = grad(this.x, this.y);
+    const depth = ridgeAt(this.x, this.y);
+    if (this.g < EDGE_RELEASE) this.edgeArmed = true;
+    if (depth < RIDGE_DEPTH * 0.5) this.crackArmed = true;
+
+    if (!(audio.started || audio.external)) return;
+
+    const pan = (this.x / W) * 2 - 1;
+    if (depth > RIDGE_DEPTH && this.crackArmed && t >= this.next.crack) {
+      this.crackArmed = false;
+      this.trigger(t, audio, T, emit, 'crack', 0, depth, (when) => audio.click(when, depth, T, pan));
+    } else if (this.g > EDGE_GRAD && this.edgeArmed && t >= this.next.note) {
+      this.edgeArmed = false;
+      const f = noteFreq(this.l, T);
+      const local = { g: this.g, l: this.l, ...colourAt(this.x, this.y) };
+      this.trigger(t, audio, T, emit, 'note', f, this.g, (when) => audio.play(this, f, local, when, T));
+    }
+  }
+
+  // An encounter with no free active step nearby rests: no sound, no event.
+  trigger(t, audio, T, emit, kind, freq, strength, sound) {
+    const at = audio.next(T, t / 1000);
+    if (at === null) return;
+    const heardMs = (at + PULSE_LATENCY) * 1000;
+    this.next[kind] = at * 1000 + SOUND_COOLDOWN;
+    this.flashAt = Math.min(this.flashAt, heardMs);
+    if (audio.started) sound(audio.time(at));
+    audio.mark(kind, this.x, this.y, heardMs / 1000, strength);
+    emit(this, kind, freq);
   }
 
   /**

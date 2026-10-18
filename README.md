@@ -57,9 +57,10 @@ wall photo -> image analysis -> tuning system -> bug sampling -> FM synthesis ->
 | Layer | What it does |
 |---|---|
 | **Wall** | Each wall is analysed for edge density, crack density, brightness, hue, orientation |
-| **Tuning** | Edge density sets steps per octave (5-23 EDO). Hue + orientation pick scale degrees. Brightness sets root frequency and tempo |
-| **Bugs** | 4-8 autonomous agents with six legs. Edge = FM note, dark crack = filtered noise click, flat paint = silence. Per-bug voice identity, stereo panning from position, rhythm grid quantisation |
-| **Audio** | FM synthesis (2-operator), per-bug filter + envelope. Effects chain: distortion, chorus, tempo-synced delay, algorithmic reverb, master compressor |
+| **Tuning** | Each image gets its own score. Edge density + texture set steps per octave (5-23 EDO). The image's luminance distribution picks the scale (its most common tone is the tonic). Edge energy across the image, left to right, sets a 16-step pulse. Brightness sets the root; edges + contrast set the tempo |
+| **Bugs** | 4-8 autonomous agents with six legs. Entering an edge = FM note; crossing a thin dark line (darker than both sides) = filtered noise click; shadows and flat paint stay silent. Stereo panning from position; sounds land on the wall's pulse, and a ring (note) or cross (click) marks where each sound was read |
+| **Compare** | Restart (`R`) replays a wall from a seed derived from its pixels. With feedback off, the same wall repeats the same encounters. Mute edge notes or crack clicks, and Inspect shows edges, cracks and the pulse columns |
+| **Audio** | FM synthesis (2-operator). The wall sets the voice (carriers, FM ratios, brightness, decay) from texture, repetition, contrast and colour; the pixels under the bug shape each note. Effects chain: distortion, chorus, tempo-synced delay, algorithmic reverb, master compressor |
 | **Feedback** | FFT energy speeds bugs up, bass pulls them down, the spectrum shears the live wall horizontally, wall slowly heals toward the original |
 | **Events** | Every encounter emits a protocol-v1 message (`event`, `wall`, `state`) over WebSocket, forwarded to OSC by the bridge — see [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md) |
 
@@ -73,10 +74,11 @@ src/the-wall/
   wall/               image analysis, tuning, wall generation, archive
   bug/                Bug class, colony management
   audio/              engine, FM synthesis, effects chain, rhythm grid
+  sim/                fixed-step simulation clock, seeded randomness
   feedback/           animation loop, spectrum shearing
   events/             protocol v1 messages, resilient WebSocket link
   input/              pointer and keyboard handlers
-  ui/                 controls, dashboard/telemetry, stylesheet
+  ui/                 controls, dashboard/telemetry, sound marks, inspection overlay, stylesheet
 tools/
   bridge.js           WebSocket hub + OSC/UDP forwarder (npm run bridge)
 docs/
@@ -89,6 +91,8 @@ walls/                wall photos (see walls/README.md)
 ```
 
 ## Docs
+
+Current status: milestone 1 comparison controls and three real-photo fixtures are implemented; matched-level blind listening remains open. Milestone 2 audio measurement and output-safety work has not started. See [Resume next session](docs/PLAN.md#resume-next-session) for the handoff and [the photo set](walls/README.md) for loading instructions. The photos are not automatically loaded into the app.
 
 - [Artistic vision](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
