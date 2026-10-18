@@ -92,6 +92,8 @@ walls/                wall photos (see walls/README.md)
 
 ## Docs
 
+Current status: milestone 1 comparison controls and three real-photo fixtures are implemented; matched-level blind listening remains open. Milestone 2 audio measurement and output-safety work has not started. See [Resume next session](docs/PLAN.md#resume-next-session) for the handoff and [the photo set](walls/README.md) for loading instructions. The photos are not automatically loaded into the app.
+
 - [Artistic vision](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Sound design](docs/SOUND_DESIGN.md)

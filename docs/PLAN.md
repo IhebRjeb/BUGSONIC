@@ -1,6 +1,6 @@
 # Plan and status
 
-Updated 2026-10-18. Latest pushed checkpoint: `8364154` on `feature/initial-version` (deployment not verified).
+Updated 2026-10-18. Implementation and photo-fixture checkpoint: `44ecd57` on `feature/initial-version` (pushed; deployment not verified). This documentation handoff follows that checkpoint.
 
 ## Creative direction
 
@@ -39,7 +39,7 @@ Acceptance: same image/seed/settings reproduce the event sequence with feedback 
 
 Verified so far: a headless run of the real bug, clock and grid modules gives identical 300-event sequences across repeats and at 30, 47.3, 60 and 144 FPS; a different seed differs; waits stay within one beat, no step holds more than 3 sounds, none land on silent steps. A sparse left-heavy pulse rested 199 of 375 encounters. In the browser with sound on and feedback off, two restarts produced the same 19 events. Hidden or heavily throttled tabs drop simulation time (by design), which breaks replay.
 
-Real-photo scores (upload path in the browser; 60 s headless runs, 4 bugs, feedback off):
+Real-photo observations: score columns below come from browser uploads; event counts and note ranges come from separate 60 s headless runs (4 bugs, feedback off) using macOS image decoding/resizing. These paths produced similar summaries, not identical pixels, seeds or every scale degree. Counts are not browser playback assertions.
 
 | Wall | edges / cracks / texture / repeat | EDO, root, tempo | pulse | events (notes/clicks) | note range |
 |---|---|---|---|---|---|
@@ -47,14 +47,14 @@ Real-photo scores (upload path in the browser; 60 s headless runs, 4 bugs, feedb
 | Lafayette Earth (repeated) | 0.082 / 0.109 / 0.34 / 0.22 | 15, 140 Hz, 115 bpm | `.x..xxxxxxxx....` | 535 (352/183) | 154–674 Hz |
 | Ibn El Jazzar (fractured) | 0.124 / 0.177 / 0.48 / 0 | 18, 143 Hz, 119 bpm | `xxxxxx.....xxxx.` | 766 (430/336) | 143–667 Hz |
 
-Each wall replays identically and matches at 60 and 144 FPS; the three sequences differ. The smooth wall is clearly separated by density, register and pulse. Measured gaps for listening to check:
+In the headless checks, each wall repeats identically at 60 FPS and shares the checked event prefix at 144 FPS; the three sequences differ. The eye photo is separated numerically by density, register and pulse, not yet by a listening result. Measured gaps for listening to check:
 
-- All three fall in the same FM voice family (texture 0.34–0.48 sits in the middle third), so timbre differs only by index and cutoff.
+- All three fall in the same FM carrier/ratio family (texture 0.34–0.48 sits in the middle third). Index, cutoff, decay, click tone and local pixel modulation can still differ.
 - Repeated and fractured share nearly the same root (140/143 Hz), tempo (115/119 bpm) and note range; they differ mainly in EDO, scale, pulse and click rate.
-- The checkered suit covers too little of the frame to register as repetition (0.22 < 0.5), so harmonic FM ratios never engage on real photos.
+- The Earth photo's repetition score is below the harmonic-ratio threshold (0.22 < 0.5). None of these three fixtures engages that branch; whether framing explains the low score remains untested.
 - Seeds come from decoded pixels, so a different JPEG decoder (browser or tool) gives a different seed for the same file.
 
-Outstanding: the blind listening comparison (same output level, labels hidden), then record which walls stay distinguishable. Mapping changes from these findings belong to milestone 3.
+Outstanding: matched-level blind listening, then record which walls stay distinguishable. A shared output-slider value does not match loudness across images. A same-setting comparison can be exploratory, but final acceptance needs measured level matching. Mapping changes from these findings belong to milestone 3.
 
 ## 2. Give the feedback meaningful audio measurements
 
@@ -107,4 +107,14 @@ Acceptance: compare with the layer muted at matched overall level. Retain it onl
 
 ## Working order
 
-Implement milestone 1 first, then the measurement/output foundation in milestone 2. Use those results to tune milestone 3; treat milestone 4 as a keep-or-remove experiment. Address performance blockers as they appear, with persistence and release checks in milestone 5. Validate and commit each milestone before starting the next; do not equate a successful build with a successful listening result.
+Milestone 1 implementation and photo fixtures are in place; listening acceptance remains open. Implement the measurement/output foundation in milestone 2 to support level-matched comparisons, then return to milestone 1 acceptance before tuning milestone 3. Treat milestone 4 as a keep-or-remove experiment. Address performance blockers as they appear, with persistence and release checks in milestone 5. Validate and commit each implementation slice; do not equate a successful build with a successful listening result.
+
+## Resume next session
+
+1. Run `npm install` and `npm run dev`. Upload the three JPEGs listed in [walls/index.json](../walls/index.json) through **Bring your own**; they are not preloaded or persisted. Keep the tab visible, use four bugs, disable Feedback, avoid scratches and restart each wall before comparison.
+2. Begin milestone 2 in `src/the-wall/audio/engine.js` (`readFFT`) and `audio/effects.js` (`buildEffectsChain`). Current measurements are byte-bin averages; the analyser hardcodes a 256-point FFT. Add time-domain RMS, Hz-defined bands and positive spectral change with explicit time-based smoothing. First checks: silence, known-amplitude tones and impulses at 44.1/48 kHz.
+3. Audit output routing before claiming mute or peak safety: current level gains are upstream of effects, so existing delay/reverb tails can remain after setting level to zero. Test all paths, overlapping voices and tails. The compressor is not a guaranteed limiter.
+4. Then update `feedback/shear.js` and `feedback/loop.js`: healing and strip shifts currently accumulate per render frame. Verify bounded displacement, time-based recovery at 30/60/120 Hz, and reduced-motion behavior.
+5. Capture equal-duration recordings with matched measured levels and hidden image labels. Record listener responses, especially Earth versus Ibn El Jazzar. Do not mark milestone 1 accepted until this is done.
+
+No milestone 2 implementation was made in this handoff. Earlier build/browser and simulation checks passed, but the simulation scripts were temporary files outside the repo, not a committed regression suite. Preserve reproducible tests in the repo when implementing the next slice. OSC regression, production deployment verification and photo-specific licensing terms remain unresolved; no license change is made here.

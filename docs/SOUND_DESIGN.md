@@ -80,7 +80,7 @@ A crack is a thin line darker than both of its sides (by 0.1 luminance, measured
 
 The image is read left to right as one bar of 16 sixteenth notes. A step is active where that column of the image holds at least average edge energy. An encounter takes the first active step within the next beat (4 steps) that holds fewer than 3 sounds. If there is none, it rests: no sound, no event. Sparse pulses therefore produce silence rather than a late pile-up. Steps are chosen in simulation time, then scheduled 60 ms ahead on the audio clock. The bug's flash and its mark fire when the sound plays. Notes and clicks each have a 170 ms cooldown per bug. Changing walls cancels sounds that have not started.
 
-Notes and clicks run through separate layer buses; muting a layer also mutes its delay send. The output level scales both the dry signal and the delay send.
+Notes and clicks run through separate layer buses; muting a layer stops new input from that layer, including its delay send. The output level scales both the dry signal and the delay send upstream of the effects. Existing delay/reverb tails can remain after either control is muted; final-output mute and peak protection still need the milestone 2 audit.
 
 ## Effects
 
@@ -113,3 +113,5 @@ These descriptions express the intended character of the mappings, not validated
 ## Development priorities
 
 See [the roadmap](PLAN.md) for staged acceptance checks. The comparison tools now exist (seeded restart, feedback switch, layer mutes, sound-source marks, inspection overlay); the remaining part of that milestone is a matched-level listening comparison on real photos. Next, replace FFT energy proxies with RMS, Hz-defined bands and transient measurements, audit output safety, and couple those measurements to bounded visual responses. Calibrate the existing FM and crack voices before evaluating an optional image-derived bytebeat layer.
+
+The three [photo fixtures](../walls/README.md) have different measured scores and headless event sequences, but perceptual distinctiveness is not established. All currently select the middle FM carrier/ratio family. Shared output settings are not loudness matching, and decoder/resizing differences can change pixel seeds and scale degrees. Use the same browser and decoded image for repeatability checks; see [the session handoff](PLAN.md#resume-next-session) before changing mappings.
