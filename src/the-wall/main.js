@@ -5,14 +5,18 @@
 // events, input, and UI controls.
 // ---------------------------------------------------------------------------
 
-import { init as initArchive, newWall } from './wall/archive.js';
+import { init as initArchive, newWall, getCurrent } from './wall/archive.js';
 import { mkCanvas } from './wall/Wall.js';
-import { init as initColony } from './bug/colony.js';
+import { measure } from './wall/analysis.js';
+import { init as initColony, restart as restartColony, getBugs } from './bug/colony.js';
 import { isStarted } from './audio/engine.js';
-import { play, click } from './audio/synth.js';
-import { grid, audioNow } from './audio/grid.js';
+import { play, click, cancelPending } from './audio/synth.js';
+import { nextStep, audioTime, reset as resetGrid } from './audio/grid.js';
 import { init as initEmitter, emit, emitWall, emitState, isExternalActive } from './events/emitter.js';
 import { init as initLoop, frame } from './feedback/loop.js';
+import * as clock from './sim/clock.js';
+import { addMark, cancelAfter, clearMarks } from './ui/marks.js';
+import { invalidate as invalidateInspect } from './ui/inspect.js';
 import { initPointer } from './input/pointer.js';
 import { initKeyboard } from './input/keyboard.js';
 import { initControls } from './ui/controls.js';
@@ -36,6 +40,28 @@ const dashboard = createDashboard();
 
 // --- Init modules ---
 
+// Sounds already placed on the pulse belong to the previous wall or run.
+function cancelScheduled() {
+  cancelPending();
+  cancelAfter(clock.now());
+  resetGrid();
+  for (const b of getBugs()) b.flashAt = Infinity;
+}
+
+// Replay the current wall from its archived pixels with its own seed.
+function restart() {
+  const w = getCurrent();
+  if (!w) return;
+  cancelScheduled();
+  wallCtx.drawImage(w.cv, 0, 0);
+  liveCtx.drawImage(w.cv, 0, 0);
+  measure(liveCtx);
+  restartColony(w.seed);
+  clock.reset();
+  clearMarks();
+  invalidateInspect();
+}
+
 // Archive
 initArchive({
   archEl:   $('arch'),
@@ -43,6 +69,8 @@ initArchive({
   wallCtx,
   liveCtx,
   onSelect: (wall) => {
+    cancelScheduled();
+    invalidateInspect();
     dashboard.select(wall);
     emitWall(wall);
   },
@@ -60,8 +88,9 @@ const audioAPI = {
   get external() { return isExternalActive(); },
   play,
   click,
-  grid,
-  now: audioNow,
+  next: nextStep,
+  time: audioTime,
+  mark: addMark,
 };
 
 // Feedback loop
@@ -80,7 +109,7 @@ initLoop({
 });
 
 // Pointer input (scratch cracks)
-initPointer(cv, ptr, wallCtx, liveCtx);
+initPointer(cv, ptr, wallCtx, liveCtx, invalidateInspect);
 
 // UI controls
 const actions = initControls({
@@ -96,11 +125,17 @@ const actions = initControls({
   wsUrl: $('ws-url'),
   ping: $('ping'),
   stream: $('stream-state'),
-});
+  noteLayer: $('layer-note'),
+  crackLayer: $('layer-crack'),
+  feedback: $('feedback'),
+  inspect: $('inspect'),
+  restart: $('restart'),
+}, restart);
 
 // Keyboard
 initKeyboard(actions);
 
 // --- Start ---
 newWall();
+restart();
 requestAnimationFrame(frame);

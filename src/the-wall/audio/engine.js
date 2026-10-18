@@ -6,10 +6,11 @@
 // ---------------------------------------------------------------------------
 
 import { FFT_SIZE, MASTER_GAIN } from '../config.js';
-import { buildEffectsChain, getInput, getDelaySend, getAnalyser } from './effects.js';
+import { buildEffectsChain } from './effects.js';
 
 let ac       = null;
 let master   = null;   // master gain -> effects chain input
+let send     = null;   // delay send, scaled by the same output level
 let analyser = null;
 let fdata    = null;
 let started  = false;
@@ -29,6 +30,10 @@ export function initAudio() {
   // Build the full effects chain and get its entry point
   const chain = buildEffectsChain(ac);
   master.connect(chain.input);
+
+  send = ac.createGain();
+  send.gain.value = level;
+  send.connect(chain.delaySend);
 
   analyser = chain.analyser;
   fdata    = new Uint8Array(analyser.frequencyBinCount);
@@ -55,7 +60,10 @@ export async function toggle() {
 export function setLevel(value) {
   if (!Number.isFinite(value)) return;
   level = Math.max(0, Math.min(.7, value));
-  if (master) master.gain.setTargetAtTime(level, ac.currentTime, .03);
+  if (master) {
+    master.gain.setTargetAtTime(level, ac.currentTime, .03);
+    send.gain.setTargetAtTime(level, ac.currentTime, .03);
+  }
 }
 
 /**
@@ -82,5 +90,5 @@ export function readFFT() {
 // Accessors
 export function getContext()   { return ac; }
 export function getMaster()    { return master; }
-export function getDelay()     { return getDelaySend(); }
+export function getDelay()     { return send; }
 export function isStarted()    { return started && ac.state === 'running'; }

@@ -22,6 +22,8 @@ export function initKeyboard(actions) {
       addBug();
     } else if (e.key === 'n') {
       newWall();
+    } else if (e.key === 'r') {
+      actions.restart?.();
     } else if (e.key === ' ') {
       e.preventDefault();
       actions.toggleSound();

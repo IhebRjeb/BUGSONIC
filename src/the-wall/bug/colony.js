@@ -4,14 +4,22 @@
 
 import { MAX_BUGS, INITIAL_BUGS } from '../config.js';
 import { Bug } from './Bug.js';
+import { rngFor } from '../sim/rng.js';
 
 let bugs = [];
+let seed = 1;
 
 /**
- * Create the initial colony.
+ * Create the colony from a seed; the same seed places and steers bugs identically.
  */
-export function init() {
-  bugs = Array.from({ length: INITIAL_BUGS }, (_, i) => new Bug(i));
+export function init(s = seed, count = INITIAL_BUGS) {
+  seed = s >>> 0;
+  bugs = Array.from({ length: count }, (_, i) => new Bug(i, rngFor(seed, i)));
+}
+
+/** Recreate the current number of bugs from a seed. */
+export function restart(s) {
+  init(s, bugs.length || INITIAL_BUGS);
 }
 
 /**
@@ -19,7 +27,7 @@ export function init() {
  */
 export function addBug() {
   if (bugs.length >= MAX_BUGS) return null;
-  const b = new Bug(bugs.length);
+  const b = new Bug(bugs.length, rngFor(seed, bugs.length));
   bugs.push(b);
   return b;
 }

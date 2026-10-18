@@ -58,6 +58,15 @@
         <div class="level-label"><label for="volume">OUTPUT LEVEL</label><output id="volume-value" for="volume">45%</output></div>
         <input id="volume" type="range" min="0" max="70" value="45">
         <div class="spectrum-wrap"><canvas id="spectrum" width="440" height="88" role="img" aria-label="Live audio frequency spectrum"></canvas><div class="micro spectrum-labels"><span>LOW</span><span>SPECTRUM</span><span>HIGH</span></div></div>
+        <fieldset class="compare">
+          <legend class="spec">COMPARE · <span id="score-id">SCORE —</span></legend>
+          <label class="check"><input id="layer-note" type="checkbox" checked> Edge notes <small>ring</small></label>
+          <label class="check"><input id="layer-crack" type="checkbox" checked> Crack clicks <small>cross</small></label>
+          <label class="check"><input id="feedback" type="checkbox" checked> Feedback <small>sound shakes the wall</small></label>
+          <label class="check"><input id="inspect" type="checkbox"> Inspect <small>edges · cracks · pulse</small></label>
+          <button id="restart" class="line-button">Restart this wall <span aria-hidden="true">R</span></button>
+          <p class="control-description">Turn feedback off and restart: the same wall replays the same encounters at the current output level.</p>
+        </fieldset>
       </section>
 
       <section class="control-section">
@@ -123,7 +132,7 @@
     </section>
   </main>
 
-  <footer class="page-footer"><span>A LIVING INSTRUMENT, NOT A RECORDING.</span><span class="keyboard-hints"><kbd>SPACE</kbd> sound <span>·</span> <kbd>B</kbd> creature <span>·</span> <kbd>N</kbd> surface <span>·</span> <kbd>1–9</kbd> select</span><span>JSON v1 → WS :9980 → OSC :7000</span></footer>
+  <footer class="page-footer"><span>A LIVING INSTRUMENT, NOT A RECORDING.</span><span class="keyboard-hints"><kbd>SPACE</kbd> sound <span>·</span> <kbd>B</kbd> creature <span>·</span> <kbd>N</kbd> surface <span>·</span> <kbd>R</kbd> restart <span>·</span> <kbd>1–9</kbd> select</span><span>JSON v1 → WS :9980 → OSC :7000</span></footer>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

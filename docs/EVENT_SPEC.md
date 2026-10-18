@@ -7,7 +7,7 @@ browser ──JSON──▶ ws://127.0.0.1:9980 (bridge) ──JSON──▶ oth
                                             └──OSC───▶ udp://127.0.0.1:7000
 ```
 
-Browser sound and external out are independent. With browser sound off and the link live, bugs keep emitting events, so an external tool can be the only sound source. Events are sent immediately; they are not quantised to the rhythm grid (use `tempo` from the `wall` message to quantise on the receiving side).
+Browser sound and external out are independent. With browser sound off and the link live, bugs keep emitting events, so an external tool can be the only sound source. An event is sent when its encounter is placed on the wall's pulse, not when it plays: the sound follows within about one beat (use `tempo` and `pulse` from the `wall` message to quantise on the receiving side). Encounters that find no free active step within one beat rest and send nothing, with or without browser sound.
 
 Every message has `v` (protocol version, `1`), `kind` and `t` (seconds since page load).
 
@@ -21,7 +21,7 @@ Every message has `v` (protocol version, `1`), `kind` and `t` (seconds since pag
 |---|---|---|
 | `wall` | string | Current wall ID (`W-001`) |
 | `bug` | int | Bug index, 0–7 |
-| `type` | string | `note` (edge) or `crack` (dark pixel) |
+| `type` | string | `note` (edge) or `crack` (thin line darker than both sides) |
 | `freq` | number | Hz. `0` for cracks |
 | `midi` | number \| null | Fractional MIDI note (microtonal walls are not 12-EDO). `null` for cracks |
 | `brightness` | number | Luminance under the bug, 0–1 |
@@ -30,19 +30,21 @@ Every message has `v` (protocol version, `1`), `kind` and `t` (seconds since pag
 | `x`, `y` | int | Pixel position on the 480×640 wall |
 | `nx`, `ny` | number | Normalised position, 0–1 |
 | `pan` | number | Stereo position, −1 (left) to 1 (right) |
-| `velocity` | number | Bug speed in px/frame |
+| `velocity` | number | Bug speed in px per simulation step (1/60 s) |
 
 ## `wall` — tuning of the selected surface
 
 Sent on connect and whenever the wall changes.
 
 ```json
-{"v":1,"kind":"wall","t":12.1,"wall":"W-002","edo":16,"root":128,"tempo":117,"scale":[0,1,2,6,7,8,9,10,11,14,15],"pulse":[0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0],"features":{"density":0.066,"brightness":0.46,"cracks":0.02,"hue":219,"orientation":"diagonal","contrast":0.21,"saturation":0.31,"texture":0.625,"coherence":0.12,"periodicity":0}}
+{"v":1,"kind":"wall","t":12.1,"wall":"W-002","score":2,"seed":"80ee3347","edo":16,"root":128,"tempo":117,"scale":[0,1,2,6,7,8,9,10,11,14,15],"pulse":[0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0],"features":{"density":0.066,"brightness":0.46,"cracks":0.02,"hue":219,"orientation":"diagonal","contrast":0.21,"saturation":0.31,"texture":0.625,"coherence":0.12,"periodicity":0}}
 ```
 
 Scale degrees are steps of `edo` divisions per octave above `root` Hz: `freq = root * 2^(degree / edo)`.
 
 `pulse` has 16 steps (16th notes at `tempo`), read left to right across the image: `1` where that column holds at least average edge energy. Browser sounds land only on active steps. `features` values are 0–1 except `hue` (0–360) and `orientation`; new keys may be added within v1.
+
+`score` is the analysis version (it changes when the same pixels would play differently). `seed` is a hash of the wall's pixels; it seeds the bugs when the wall is restarted, so the same image, seed and settings replay the same encounters while feedback is off.
 
 ## `state` — creature positions (optional, 10 Hz)
 

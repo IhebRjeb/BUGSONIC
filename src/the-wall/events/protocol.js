@@ -4,7 +4,7 @@
 // See docs/EVENT_SPEC.md. Every message carries `v` and `kind`.
 // ---------------------------------------------------------------------------
 
-import { W, H } from '../config.js';
+import { W, H, SCORE_VERSION } from '../config.js';
 
 export { rgbToHue } from '../wall/analysis.js';
 
@@ -47,6 +47,8 @@ export function wallMessage(wall) {
     kind: 'wall',
     t: now(),
     wall: wall.id,
+    score: SCORE_VERSION,
+    seed: wall.seed.toString(16).padStart(8, '0'),
     edo: wall.T.edo,
     root: wall.T.base,
     scale: wall.T.scale,

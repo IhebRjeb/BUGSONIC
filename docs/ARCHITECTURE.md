@@ -49,33 +49,41 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 | **tuning** | `wall/tuning.js` | Image score to music: EDO, scale, root, tempo, pulse, wall voice |
 | **generator** | `wall/generator.js` | Procedural wall texture generation |
 | **Bug** | `bug/Bug.js` | Bug class: movement, legs, sampling, sound triggers |
-| **colony** | `bug/colony.js` | Bug collection: init, add, step all, draw all |
-| **engine** | `audio/engine.js` | AudioContext, master gain, FFT reads |
-| **synth** | `audio/synth.js` | FM synthesis voices, noise clicks |
+| **colony** | `bug/colony.js` | Bug collection: seeded init and restart, add, step all, draw all |
+| **engine** | `audio/engine.js` | AudioContext, output level (dry and delay send), FFT reads |
+| **synth** | `audio/synth.js` | FM voices and noise clicks on per-layer mute buses; cancels voices not yet started |
 | **effects** | `audio/effects.js` | Distortion, chorus, delay, reverb, compressor |
-| **grid** | `audio/grid.js` | Quantises sounds to the wall's 16-step pulse on the audio clock |
-| **loop** | `feedback/loop.js` | requestAnimationFrame orchestration |
+| **grid** | `audio/grid.js` | Places sounds on the wall's 16-step pulse (wait limit, per-step cap) and maps them to the audio clock |
+| **clock** | `sim/clock.js` | Fixed 60 Hz simulation steps, following the audio clock while sound runs |
+| **rng** | `sim/rng.js` | Seeded random streams, one per bug |
+| **loop** | `feedback/loop.js` | requestAnimationFrame orchestration; feedback switch |
 | **shear** | `feedback/shear.js` | FFT-driven horizontal strip shifting + healing |
 | **emitter** | `events/emitter.js` | JSON event creation, WebSocket send |
 | **pointer** | `input/pointer.js` | Pointer/touch scratch interaction |
 | **keyboard** | `input/keyboard.js` | Keyboard shortcuts |
-| **controls** | `ui/controls.js` | Button handlers |
+| **controls** | `ui/controls.js` | Button handlers, comparison controls |
+| **marks** | `ui/marks.js` | Sound-source marks shown when each sound is heard |
+| **inspect** | `ui/inspect.js` | Optional overlay: edges, cracks, pulse columns and audible step |
 | **main** | `main.js` | Entry point: wires everything together |
 
 ## Data flow
 
-1. A wall is selected (generated or uploaded photo).
-2. `analysis.js` reads all pixels, computes luminance array and aggregate features (edge density, brightness, cracks, hue, orientation).
-3. `tuning.js` maps features to musical parameters (EDO, scale degrees, root frequency, tempo).
+1. A wall is selected (generated or uploaded photo). Sounds still waiting on the pulse are cancelled.
+2. `analysis.js` reads all pixels and computes the spatial image score plus a pixel-hash seed.
+3. `tuning.js` maps the score to EDO, scale, root, tempo, pulse and wall voice.
 4. Each frame, `loop.js` runs:
    - Reads FFT data from the analyser.
-   - `shear.js` shifts horizontal strips of the live wall based on FFT bins, then blends the original back in (healing).
+   - With feedback on, `shear.js` shifts horizontal strips of the live wall based on FFT bins; the original always blends back in (healing).
    - Re-measures luminance every 3 frames.
-   - Steps all bugs: each bug reads luminance and gradient at its position, decides whether to trigger a sound.
-5. When a bug triggers a sound:
-   - `synth.js` creates an FM voice (carrier + modulator) routed through the effects chain.
+   - Runs the fixed simulation steps that `clock.js` says are due. In each, every bug moves and reads luminance, gradient and ridge depth at its position. With feedback off, FFT energy does not affect the bugs.
+   - Draws the wall, the optional inspection overlay, sound-source marks and the bugs.
+5. When a bug enters an edge or crosses a crack, `grid.js` picks the next active pulse step within one beat that still has room. If there is none the encounter rests. Otherwise:
+   - `synth.js` schedules the voice at that step on the audio clock, through its layer bus.
+   - A mark and the bug's flash appear when the sound is heard.
    - `emitter.js` creates a JSON event and optionally sends it via WebSocket.
 6. The effects chain processes all voices: distortion -> chorus -> delay (with filtered feedback) -> reverb -> compressor -> analyser -> speakers.
+
+Restart (button or `R`) copies the archived wall back, re-measures it, and recreates the bugs from the wall's seed at simulation time 0. With feedback off and no pointer input, the encounter sequence repeats at any frame rate. Audio waveforms are not guaranteed identical (click noise offsets vary, and browsers differ).
 
 ## Key design decisions
 

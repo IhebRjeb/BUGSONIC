@@ -3,9 +3,10 @@
 // ---------------------------------------------------------------------------
 // Runs every frame via requestAnimationFrame. Orchestrates:
 //   1. FFT read
-//   2. Spectrum shearing + healing
+//   2. Spectrum shearing + healing (shearing only while feedback is on)
 //   3. Luminance re-measurement
-//   4. Bug stepping + drawing
+//   4. Fixed simulation steps for the bugs
+//   5. Drawing: wall, inspection overlay, sound marks, bugs
 // ---------------------------------------------------------------------------
 
 import { W, H, MEASURE_EVERY } from '../config.js';
@@ -14,8 +15,12 @@ import { shearAndHeal } from './shear.js';
 import { measure } from '../wall/analysis.js';
 import { stepAll, drawAll } from '../bug/colony.js';
 import { getTuning } from '../wall/archive.js';
+import * as clock from '../sim/clock.js';
+import { drawMarks } from '../ui/marks.js';
+import { drawInspect } from '../ui/inspect.js';
 
 let frameCount = 0;
+let feedback = true;
 
 // References set by init()
 let displayCtx = null;
@@ -42,14 +47,22 @@ export function init(opts) {
 }
 
 /**
+ * Feedback off: sound no longer shears the wall or drives the bugs, so a
+ * seeded performance repeats its encounters.
+ */
+export function setFeedback(on) {
+  feedback = !!on;
+}
+
+/**
  * Single frame tick — called by requestAnimationFrame.
  */
 export function frame(t) {
   const { energy, low, bands } = readFFT();
   const T = getTuning();
 
-  // Shear + heal
-  shearAndHeal(liveCtx, liveCv, wallCv, bands);
+  // Shear + heal (healing continues so a sheared wall recovers)
+  shearAndHeal(liveCtx, liveCv, wallCv, feedback ? bands : null);
 
   // Re-measure luminance periodically
   if (frameCount++ % MEASURE_EVERY === 0) {
@@ -63,8 +76,14 @@ export function frame(t) {
   displayCtx.fillStyle = `rgba(0,0,0,${0.04 + (1 - energy) * 0.06})`;
   displayCtx.fillRect(0, 0, W, H);
 
-  // Step and draw bugs
-  if (T) stepAll(t, energy, low, ptr, audioAPI, T, emitFn);
+  const steps = clock.advance(t);
+  for (let i = 0; i < steps; i++) {
+    clock.tick();
+    if (T) stepAll(clock.now() * 1000, feedback ? energy : 0, feedback ? low : 0, ptr, audioAPI, T, emitFn);
+  }
+  const simT = clock.now();
+  drawInspect(displayCtx, T, simT);
+  drawMarks(displayCtx, simT);
   drawAll(displayCtx);
   onFrame?.(t, bands, energy);
 

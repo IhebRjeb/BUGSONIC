@@ -111,9 +111,20 @@ function periodicity(profile) {
   return clamp01(best);
 }
 
+/** FNV-1a hash of the RGB pixels: the same image always gives the same seed. */
+export function pixelSeed(C) {
+  let h = 0x811C9DC5;
+  for (let i = 0; i < C.length; i += 4) {
+    h = Math.imul(h ^ C[i], 0x01000193);
+    h = Math.imul(h ^ C[i + 1], 0x01000193);
+    h = Math.imul(h ^ C[i + 2], 0x01000193);
+  }
+  return h >>> 0;
+}
+
 /**
  * Analyse luminance + RGBA buffers (pure, so it can be tested outside the browser).
- * @returns {{ summary: object, hist: Float32Array, pulse: number[] }}
+ * @returns {{ summary: object, hist: Float32Array, pulse: number[], seed: number }}
  */
 export function analyseImage(L, C, w, h) {
   const r0 = RIDGE_RADIUS;
@@ -219,6 +230,7 @@ export function analyseImage(L, C, w, h) {
     },
     hist: hist.map(v => v / total),
     pulse,
+    seed: pixelSeed(C),
   };
 }
 

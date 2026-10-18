@@ -18,6 +18,15 @@ export const EDGE_RELEASE   = 0.035; // must drop below this before the next edg
 export const RIDGE_RADIUS   = 5;     // px — ring used to compare a point with its surroundings
 export const RIDGE_DEPTH    = 0.1;   // darker than its ring by this = crack
 export const PULSE_STEPS    = 16;    // left-to-right image columns -> 16th-note steps
+export const SCORE_VERSION  = 2;     // bump when analysis or tuning changes what an image plays
+
+// Simulation and pulse scheduling
+export const SIM_HZ         = 60;    // fixed simulation steps per second
+export const SIM_MAX_STEPS  = 8;     // per frame; beyond this the clock drops time and re-anchors
+export const PULSE_LATENCY  = 0.06;  // s from simulation time to audio output
+export const PULSE_MAX_WAIT = 4;     // steps (one beat); encounters with no free active step rest
+export const PULSE_VOICES   = 3;     // sounds per step; further encounters move on or rest
+export const MARK_LIFE      = 0.9;   // s a sound-source mark stays visible
 
 // Tuning ranges
 export const EDO_MIN        = 5;

@@ -1,4 +1,4 @@
-import { MAX_BUGS } from '../config.js';
+import { MAX_BUGS, SCORE_VERSION } from '../config.js';
 import { getBugs } from '../bug/colony.js';
 import { getWalls } from '../wall/archive.js';
 import { isStarted } from '../audio/engine.js';
@@ -21,7 +21,7 @@ const LINK_MESSAGES = {
 export function createDashboard() {
   const ids = ['wall-id', 'wall-count', 'tempo', 'edo', 'root', 'scale', 'bug-count', 'more',
     'colony-dots', 'surface-state', 'audio-state', 'go', 'sound-label', 'spectrum', 'fps', 'ev-rate',
-    'link-state', 'connection-status', 'wsb', 'ws-url', 'ping', 'tx-count', 'listeners', 'osc-target', 'signal-log'];
+    'link-state', 'connection-status', 'wsb', 'ws-url', 'ping', 'tx-count', 'listeners', 'osc-target', 'signal-log', 'score-id'];
   const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
   document.getElementById('bridge-command').textContent = bridgeCommand();
   els['connection-status'].textContent = LINK_MESSAGES.off();
@@ -50,6 +50,7 @@ export function createDashboard() {
     els.edo.textContent = wall.T.edo;
     els.root.textContent = wall.T.base;
     els.scale.textContent = wall.T.scale.length;
+    els['score-id'].textContent = `SCORE v${SCORE_VERSION} · SEED ${wall.seed.toString(16).padStart(8, '0')}`;
   }
 
   function surfaceState() {

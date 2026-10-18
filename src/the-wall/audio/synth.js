@@ -23,6 +23,44 @@ import { getContext, getMaster, getDelay } from './engine.js';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 let noise = null;
 
+// Each layer has its own bus, so muting a layer also silences its delay send.
+const layers = { note: { on: true, bus: null }, crack: { on: true, bus: null } };
+let pending = [];   // { at, end, out } for voices not yet finished
+
+function layerBus(kind) {
+  const layer = layers[kind];
+  if (!layer.bus) {
+    const ac = getContext();
+    layer.bus = ac.createGain();
+    layer.bus.gain.value = layer.on ? 1 : 0;
+    layer.bus.connect(getMaster());
+    const delay = getDelay();
+    if (kind === 'note' && delay) layer.bus.connect(delay);
+  }
+  return layer.bus;
+}
+
+export function setLayer(kind, on) {
+  const layer = layers[kind];
+  layer.on = !!on;
+  if (layer.bus) layer.bus.gain.setTargetAtTime(layer.on ? 1 : 0, getContext().currentTime, 0.02);
+}
+
+function track(at, end, out) {
+  const now = getContext().currentTime;
+  pending = pending.filter(p => p.end > now);
+  pending.push({ at, end, out });
+}
+
+/** Silence voices scheduled but not yet started (e.g. after a wall change). */
+export function cancelPending() {
+  const ac = getContext();
+  if (!ac) return;
+  const now = ac.currentTime;
+  for (const p of pending) if (p.at > now) p.out.disconnect();
+  pending = pending.filter(p => p.at <= now && p.end > now);
+}
+
 /**
  * Play a pitched FM note.
  *
@@ -34,8 +72,6 @@ let noise = null;
  */
 export function play(bug, freq, local, time, T) {
   const ac     = getContext();
-  const master = getMaster();
-  const delay  = getDelay();
   const v      = T.voice;
   const edge   = clamp(local.g / 0.3, 0, 1);
   const decayTime = (NOTE_DECAY_MIN + edge * (NOTE_DECAY_MAX - NOTE_DECAY_MIN)) * v.decay;
@@ -79,14 +115,14 @@ export function play(bug, freq, local, time, T) {
   osc.connect(flt);
   flt.connect(gn);
   gn.connect(pan);
-  pan.connect(master);
-  if (delay) pan.connect(delay);
+  pan.connect(layerBus('note'));
 
   mod.start(time);
   osc.start(time);
   const stopTime = time + decayTime + 0.1;
   mod.stop(stopTime);
   osc.stop(stopTime);
+  track(time, stopTime, pan);
 }
 
 function noiseBuffer(ac) {
@@ -108,7 +144,6 @@ function noiseBuffer(ac) {
  */
 export function click(time, depth, T, panPos) {
   const ac     = getContext();
-  const master = getMaster();
   const d      = clamp(depth / 0.4, 0, 1);
   const dur    = CLICK_DURATION * (0.6 + d * 2);
 
@@ -133,7 +168,8 @@ export function click(time, depth, T, panPos) {
   src.connect(flt);
   flt.connect(gn);
   gn.connect(pan);
-  pan.connect(master);
+  pan.connect(layerBus('crack'));
   src.start(time, Math.random() * Math.max(0, src.buffer.duration - dur));
   src.stop(time + dur + 0.02);
+  track(time, time + dur + 0.02, pan);
 }

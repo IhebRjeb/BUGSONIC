@@ -78,7 +78,9 @@ A crack is a thin line darker than both of its sides (by 0.1 luminance, measured
 
 ### Rhythm
 
-The image is read left to right as one bar of 16 sixteenth notes. A step is active where that column of the image holds at least average edge energy. Sounds wait for the next active step on the audio clock, and the bug's flash fires when the sound actually plays. Notes and clicks each have a 170 ms cooldown per bug.
+The image is read left to right as one bar of 16 sixteenth notes. A step is active where that column of the image holds at least average edge energy. An encounter takes the first active step within the next beat (4 steps) that holds fewer than 3 sounds. If there is none, it rests: no sound, no event. Sparse pulses therefore produce silence rather than a late pile-up. Steps are chosen in simulation time, then scheduled 60 ms ahead on the audio clock. The bug's flash and its mark fire when the sound plays. Notes and clicks each have a 170 ms cooldown per bug. Changing walls cancels sounds that have not started.
+
+Notes and clicks run through separate layer buses; muting a layer also mutes its delay send. The output level scales both the dry signal and the delay send.
 
 ## Effects
 
@@ -88,7 +90,7 @@ The image is read left to right as one bar of 16 sixteenth notes. A step is acti
 | **Chorus** | Stereo width and movement | 0.8 Hz LFO, 3ms depth, two detuned delay lines, 20% wet |
 | **Delay** | Rhythmic echoes | 370ms (can be tempo-synced), 35% feedback, lowpass at 2200 Hz in feedback path (darkening repeats), 30% wet |
 | **Reverb** | Spatial depth | Algorithmic impulse response (2.5s decay), 20ms pre-delay for clarity, 25% wet |
-| **Compressor** | Safety limiter for live use | -18 dB threshold, 12 dB knee, 4:1 ratio, 3ms attack, 150ms release |
+| **Compressor** | Dynamic-range control, not a guaranteed peak limiter | -18 dB threshold, 12 dB knee, 4:1 ratio, 3ms attack, 150ms release |
 
 ## Tuning system
 
@@ -105,3 +107,9 @@ Each wall is analysed once when selected (about 50-80 ms). The same pixels alway
 | **Voice** | Texture, repetition, contrast, coherence, colour | see Synthesis |
 
 A smooth grey gradient plays few, slow, soft notes on a sparse scale. A grainy, high-contrast image plays fast, microtonal, inharmonic music. Two images with the same average brightness and colour still differ if their tones, textures or layouts differ. Changing only colour changes timbre, not rhythm.
+
+These descriptions express the intended character of the mappings, not validated listening results. With feedback off and no pointer input, a restart replays the same encounters (same bugs, places, pitches and steps); live feedback and scratches make each performance diverge, and click noise is never sample-identical. Colour edits that also change luminance or edge structure can change rhythm.
+
+## Development priorities
+
+See [the roadmap](PLAN.md) for staged acceptance checks. The comparison tools now exist (seeded restart, feedback switch, layer mutes, sound-source marks, inspection overlay); the remaining part of that milestone is a matched-level listening comparison on real photos. Next, replace FFT energy proxies with RMS, Hz-defined bands and transient measurements, audit output safety, and couple those measurements to bounded visual responses. Calibrate the existing FM and crack voices before evaluating an optional image-derived bytebeat layer.

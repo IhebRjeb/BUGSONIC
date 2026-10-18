@@ -13,8 +13,9 @@ import { W, H } from '../config.js';
  * @param {{ d: number, x: number, y: number }} ptr — shared pointer state
  * @param {CanvasRenderingContext2D} wallCtx — original wall context
  * @param {CanvasRenderingContext2D} liveCtx — live wall context
+ * @param {() => void} [onScratchEnd] — called when a scratch is finished
  */
-export function initPointer(cv, ptr, wallCtx, liveCtx) {
+export function initPointer(cv, ptr, wallCtx, liveCtx, onScratchEnd) {
   const pos = (e) => {
     const r = cv.getBoundingClientRect();
     return {
@@ -45,5 +46,6 @@ export function initPointer(cv, ptr, wallCtx, liveCtx) {
 
   cv.onpointerup = cv.onpointercancel = () => {
     ptr.d = 0;
+    onScratchEnd?.();
   };
 }
