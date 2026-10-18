@@ -11,20 +11,19 @@
 - Procedural wall generation (layered rectangles, posters, cracks)
 - Photo upload with cover-crop to 480x640
 - Archive strip with wall switching (click or keys 1-9)
-- Per-wall feature analysis: edge density, crack density, brightness, hue, orientation
-- Per-wall tuning derivation: EDO, scale, root frequency, tempo
+- Per-wall image score: edge density, texture scale, contrast, coherence, repetition, saturation-weighted hue, luminance distribution, left-to-right edge profile, ridge (crack) density
+- Per-wall tuning derivation: EDO, scale from the luminance distribution, root, tempo, 16-step pulse, wall voice
 
 ### Bug system
 - 4-8 autonomous agents with six legs (IK-like stepping)
-- Sinusoidal wandering + random jitter + pointer attraction
+- Sinusoidal wandering + random jitter + pointer attraction, frame-rate independent
 - FFT energy speeds bugs up, bass pulls them down
-- Edge detection triggers FM notes, crack detection triggers noise clicks
-- Per-bug voice identity (carrier type, FM ratio, filter, detune)
-- Stereo panning from position, rhythm grid quantisation
+- Entering an edge triggers an FM note; crossing a thin dark ridge triggers a noise click (with hysteresis)
+- Stereo panning from position; sounds and flashes land on the wall's pulse
 
 ### Audio
-- 2-operator FM synthesis with per-bug voice profiles
-- Filtered noise clicks with pitch envelope for cracks
+- 2-operator FM synthesis; wall voice + local pixels shape each note
+- Filtered noise clicks; crack depth sets pitch, length and level
 - Effects chain: waveshaper distortion, chorus, delay (filtered feedback), algorithmic reverb, master compressor
 - FFT analyser feeds the visual feedback loop
 

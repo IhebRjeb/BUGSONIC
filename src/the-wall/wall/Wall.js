@@ -60,7 +60,8 @@ export class Wall {
    * @param {CanvasRenderingContext2D} liveCtx — the live canvas context
    */
   analyse(liveCtx) {
-    this.f = features(liveCtx);
-    this.T = deriveTuning(this.f);
+    const { summary, hist, pulse } = features(liveCtx);
+    this.f = summary;
+    this.T = deriveTuning(summary, hist, pulse);
   }
 }

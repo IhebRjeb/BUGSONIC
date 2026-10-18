@@ -65,8 +65,8 @@ export function select(w) {
   const f = w.f;
   const T = w.T;
   infoEl.textContent =
-    `${w.id} \u00b7 ${f.orientation} \u00b7 edges ${f.density} \u00b7 cracks ${f.cracks} \u00b7 hue ${f.hue}\u00b0` +
-    ` -> ${T.edo}/oct, ${T.scale.length}-note scale [${T.scale}], root ${T.base} Hz, ${T.tempo} bpm`;
+    `${w.id} \u00b7 edges ${f.density} \u00b7 texture ${f.texture} \u00b7 cracks ${f.cracks} \u00b7 repeat ${f.periodicity} \u00b7 hue ${f.hue}\u00b0` +
+    ` -> ${T.edo}/oct, ${T.scale.length}-note scale [${T.scale}], root ${T.base} Hz, ${T.tempo} bpm, pulse ${T.pulse.map(p => (p ? 'x' : '.')).join('')}`;
 
   if (onSelect) onSelect(w);
 }
@@ -91,6 +91,9 @@ export function loadPhoto(file) {
       try {
         const c = mkCanvas();
         const ctx = c.getContext('2d');
+        // Transparent pixels would otherwise read as black cracks.
+        ctx.fillStyle = '#c3c7bc';
+        ctx.fillRect(0, 0, W, H);
         const s = Math.max(W / im.width, H / im.height);
         ctx.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s);
         resolve(addWall(c, file.name));
@@ -117,4 +120,4 @@ export function selectByIndex(n) {
 
 export function getCurrent()  { return current; }
 export function getWalls()    { return walls; }
-export function getTuning()   { return current?.T ?? { edo: 12, base: 130, scale: [0], tempo: 100 }; }
+export function getTuning()   { return current?.T ?? null; }

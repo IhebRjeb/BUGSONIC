@@ -45,15 +45,15 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 | **config** | `config.js` | All constants: canvas size, thresholds, audio params |
 | **Wall** | `wall/Wall.js` | Wall class: canvas, thumbnail, features, tuning |
 | **archive** | `wall/archive.js` | Collection management: add, select, switch |
-| **analysis** | `wall/analysis.js` | Pixel reads: luminance, gradient, aggregate features |
-| **tuning** | `wall/tuning.js` | Feature-to-music mapping: EDO, scale, root, tempo |
+| **analysis** | `wall/analysis.js` | Pixel reads: luminance, gradient, ridges (cracks), local colour, spatial image score |
+| **tuning** | `wall/tuning.js` | Image score to music: EDO, scale, root, tempo, pulse, wall voice |
 | **generator** | `wall/generator.js` | Procedural wall texture generation |
 | **Bug** | `bug/Bug.js` | Bug class: movement, legs, sampling, sound triggers |
 | **colony** | `bug/colony.js` | Bug collection: init, add, step all, draw all |
 | **engine** | `audio/engine.js` | AudioContext, master gain, FFT reads |
 | **synth** | `audio/synth.js` | FM synthesis voices, noise clicks |
 | **effects** | `audio/effects.js` | Distortion, chorus, delay, reverb, compressor |
-| **grid** | `audio/grid.js` | Rhythm quantisation (1/8th note grid) |
+| **grid** | `audio/grid.js` | Quantises sounds to the wall's 16-step pulse on the audio clock |
 | **loop** | `feedback/loop.js` | requestAnimationFrame orchestration |
 | **shear** | `feedback/shear.js` | FFT-driven horizontal strip shifting + healing |
 | **emitter** | `events/emitter.js` | JSON event creation, WebSocket send |
@@ -83,4 +83,4 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 - **Vite for development only.** Hot reload during development; the app can also be built to a static `dist/` folder.
 - **Modules communicate through function calls, not events.** The `main.js` entry point wires modules together explicitly. No global state, no event bus.
 - **Audio interface object avoids circular imports.** Bugs receive an `audioAPI` object with `play`, `click`, `grid`, and `started` — they don't import audio modules directly.
-- **Effects chain is built once.** All voices route through the same chain. Individual voice character comes from per-bug FM ratios, filter types, and envelope shapes.
+- **Effects chain is built once.** All voices route through the same chain. Individual voice character comes from the wall's voice (set by its texture, repetition, contrast and colour) and the pixels under each bug.

@@ -10,7 +10,7 @@ import { mkCanvas } from './wall/Wall.js';
 import { init as initColony } from './bug/colony.js';
 import { isStarted } from './audio/engine.js';
 import { play, click } from './audio/synth.js';
-import { grid } from './audio/grid.js';
+import { grid, audioNow } from './audio/grid.js';
 import { init as initEmitter, emit, emitWall, emitState, isExternalActive } from './events/emitter.js';
 import { init as initLoop, frame } from './feedback/loop.js';
 import { initPointer } from './input/pointer.js';
@@ -61,6 +61,7 @@ const audioAPI = {
   play,
   click,
   grid,
+  now: audioNow,
 };
 
 // Feedback loop

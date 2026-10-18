@@ -37,10 +37,12 @@ Every message has `v` (protocol version, `1`), `kind` and `t` (seconds since pag
 Sent on connect and whenever the wall changes.
 
 ```json
-{"v":1,"kind":"wall","t":12.1,"wall":"W-002","edo":21,"root":150,"tempo":101,"scale":[0,2,4,6,8],"features":{"density":0.063,"brightness":0.44,"cracks":0.033,"hue":179,"orientation":"horizontal"}}
+{"v":1,"kind":"wall","t":12.1,"wall":"W-002","edo":16,"root":128,"tempo":117,"scale":[0,1,2,6,7,8,9,10,11,14,15],"pulse":[0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0],"features":{"density":0.066,"brightness":0.46,"cracks":0.02,"hue":219,"orientation":"diagonal","contrast":0.21,"saturation":0.31,"texture":0.625,"coherence":0.12,"periodicity":0}}
 ```
 
 Scale degrees are steps of `edo` divisions per octave above `root` Hz: `freq = root * 2^(degree / edo)`.
+
+`pulse` has 16 steps (16th notes at `tempo`), read left to right across the image: `1` where that column holds at least average edge energy. Browser sounds land only on active steps. `features` values are 0–1 except `hue` (0–360) and `orientation`; new keys may be added within v1.
 
 ## `state` — creature positions (optional, 10 Hz)
 

@@ -64,7 +64,7 @@ export function frame(t) {
   displayCtx.fillRect(0, 0, W, H);
 
   // Step and draw bugs
-  stepAll(t, energy, low, ptr, audioAPI, T, emitFn);
+  if (T) stepAll(t, energy, low, ptr, audioAPI, T, emitFn);
   drawAll(displayCtx);
   onFrame?.(t, bands, energy);
 

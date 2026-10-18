@@ -1,11 +1,12 @@
 // ---------------------------------------------------------------------------
 // BUGSONIC / THE WALL — synthesis voices
 // ---------------------------------------------------------------------------
-// Each bug has a distinct voice identity based on its id:
-//   - Oscillator type (carrier)
-//   - FM modulator ratio (from FM_RATIO_SET)
-//   - Filter character
-//   - Envelope shape
+// The wall sets the voice (carriers, FM ratios, index, decay, filter); each
+// bug picks within it, and the pixels under the bug shape every note:
+//   edge strength -> FM brightness, decay, level
+//   luminance     -> filter cutoff
+//   saturation    -> filter resonance
+//   crack depth   -> click pitch, length, level
 //
 // play()  — pitched note triggered by an edge (FM synthesis)
 // click() — filtered noise burst triggered by a crack
@@ -13,103 +14,74 @@
 
 import {
   W,
-  FM_INDEX_MIN, FM_INDEX_MAX, FM_RATIO_SET,
+  FM_INDEX_MAX,
   NOTE_ATTACK, NOTE_DECAY_MIN, NOTE_DECAY_MAX,
   CLICK_DURATION, CLICK_GAIN,
 } from '../config.js';
 import { getContext, getMaster, getDelay } from './engine.js';
 
-// Per-bug voice profiles — deterministic from bug id
-const CARRIER_TYPES = ['sine', 'triangle', 'sawtooth', 'square'];
-const FILTER_TYPES  = ['lowpass', 'bandpass', 'lowpass', 'highpass'];
-
-function voiceProfile(bugId) {
-  return {
-    carrier:  CARRIER_TYPES[bugId % CARRIER_TYPES.length],
-    filter:   FILTER_TYPES[bugId % FILTER_TYPES.length],
-    fmRatio:  FM_RATIO_SET[bugId % FM_RATIO_SET.length],
-    detune:   (bugId % 3 - 1) * 4,          // -4, 0, or +4 cents
-    filterQ:  3 + (bugId % 5) * 1.5,        // 3 to 9
-    gainBase: 0.14 + (bugId % 3) * 0.02,    // slight volume variation
-  };
-}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+let noise = null;
 
 /**
  * Play a pitched FM note.
  *
  * @param {import('../bug/Bug.js').Bug} bug
- * @param {number} freq     — Hz
- * @param {number} gradient — edge strength (0-1ish, affects decay + FM index)
- * @param {number} hue      — 0-1, mapped to filter cutoff
- * @param {number} time     — scheduled start time (seconds)
+ * @param {number} freq — Hz
+ * @param {{ g: number, l: number, sat: number }} local — pixels under the bug
+ * @param {number} time — scheduled start time (seconds)
+ * @param {{ voice: object }} T — current tuning
  */
-export function play(bug, freq, gradient, hue, time) {
+export function play(bug, freq, local, time, T) {
   const ac     = getContext();
   const master = getMaster();
   const delay  = getDelay();
-  const v      = voiceProfile(bug.id);
+  const v      = T.voice;
+  const edge   = clamp(local.g / 0.3, 0, 1);
+  const decayTime = (NOTE_DECAY_MIN + edge * (NOTE_DECAY_MAX - NOTE_DECAY_MIN)) * v.decay;
 
   // --- FM modulator ---
   const mod     = ac.createOscillator();
   mod.type      = 'sine';
-  mod.frequency.value = freq * v.fmRatio;
+  mod.frequency.value = freq * v.ratios[bug.id % v.ratios.length];
 
-  const fmIndex = FM_INDEX_MIN + gradient * (FM_INDEX_MAX - FM_INDEX_MIN);
+  const fmIndex = Math.min(FM_INDEX_MAX, v.index * (0.5 + edge * 4));
   const modGain = ac.createGain();
   modGain.gain.setValueAtTime(freq * fmIndex, time);
-  // FM index decays with the note — brighter attack, darker sustain
-  modGain.gain.exponentialRampToValueAtTime(
-    freq * FM_INDEX_MIN * 0.5 + 0.01,
-    time + NOTE_DECAY_MIN + gradient * (NOTE_DECAY_MAX - NOTE_DECAY_MIN) * 0.6
-  );
-
+  modGain.gain.exponentialRampToValueAtTime(freq * 0.05 + 0.01, time + decayTime * 0.6);
   mod.connect(modGain);
 
   // --- Carrier ---
   const osc = ac.createOscillator();
-  osc.type  = v.carrier;
+  osc.type  = v.carriers[bug.id % v.carriers.length];
   osc.frequency.value = freq;
-  osc.detune.value    = v.detune;
-
-  // FM: modulator modulates carrier frequency
+  osc.detune.value    = (bug.id % 3 - 1) * 4;
   modGain.connect(osc.frequency);
 
-  // --- Filter ---
+  // --- Filter: opens on attack, closes during decay ---
+  const cutoff = clamp(v.cutoff * 2 ** ((local.l - 0.5) * 2), 120, 9000);
   const flt = ac.createBiquadFilter();
-  flt.type  = v.filter;
-  // Hue controls cutoff: dark hues = low cutoff, bright hues = high cutoff
-  flt.frequency.value = 200 + hue * 4000;
-  flt.Q.value = v.filterQ;
-  // Filter envelope: opens on attack, closes during decay
-  flt.frequency.setValueAtTime(200 + hue * 4000, time);
-  flt.frequency.linearRampToValueAtTime(
-    Math.min(8000, 400 + hue * 6000),
-    time + NOTE_ATTACK * 2
-  );
-  flt.frequency.exponentialRampToValueAtTime(
-    Math.max(80, 150 + hue * 800),
-    time + NOTE_DECAY_MIN + gradient * (NOTE_DECAY_MAX - NOTE_DECAY_MIN)
-  );
+  flt.type  = 'lowpass';
+  flt.Q.value = 0.7 + local.sat * 8;
+  flt.frequency.setValueAtTime(cutoff, time);
+  flt.frequency.linearRampToValueAtTime(Math.min(10000, cutoff * 1.8), time + NOTE_ATTACK * 2);
+  flt.frequency.exponentialRampToValueAtTime(Math.max(80, cutoff * 0.25), time + decayTime);
 
   // --- Amplitude envelope ---
-  const decayTime = NOTE_DECAY_MIN + gradient * (NOTE_DECAY_MAX - NOTE_DECAY_MIN);
   const gn = ac.createGain();
   gn.gain.setValueAtTime(0, time);
-  gn.gain.linearRampToValueAtTime(v.gainBase, time + NOTE_ATTACK);
+  gn.gain.linearRampToValueAtTime(0.08 + edge * 0.1, time + NOTE_ATTACK);
   gn.gain.exponentialRampToValueAtTime(0.001, time + decayTime);
 
-  // --- Stereo panning from bug position ---
   const pan = ac.createStereoPanner();
-  pan.pan.value = (bug.x / W) * 2 - 1;
+  pan.pan.value = clamp((bug.x / W) * 2 - 1, -1, 1);
 
-  // --- Routing ---
   osc.connect(flt);
   flt.connect(gn);
   gn.connect(pan);
   pan.connect(master);
   if (delay) pan.connect(delay);
 
-  // --- Schedule ---
   mod.start(time);
   osc.start(time);
   const stopTime = time + decayTime + 0.1;
@@ -117,42 +89,51 @@ export function play(bug, freq, gradient, hue, time) {
   osc.stop(stopTime);
 }
 
+function noiseBuffer(ac) {
+  if (noise?.sampleRate === ac.sampleRate) return noise;
+  const len = Math.ceil(ac.sampleRate * CLICK_DURATION * 3);
+  noise = ac.createBuffer(1, len, ac.sampleRate);
+  const d = noise.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return noise;
+}
+
 /**
  * Play a filtered noise click (crack sound).
- * Richer than a plain white noise burst: bandpass filtered with pitch envelope.
  *
- * @param {number} time — scheduled start time (seconds)
+ * @param {number} time   — scheduled start time (seconds)
+ * @param {number} depth  — how much darker the crack is than both sides (0-1)
+ * @param {{ voice: object }} T — current tuning
+ * @param {number} panPos — -1 (left) to +1 (right)
  */
-export function click(time) {
+export function click(time, depth, T, panPos) {
   const ac     = getContext();
   const master = getMaster();
-
-  const rate = ac.sampleRate;
-  const len  = rate * CLICK_DURATION;
-  const buf  = ac.createBuffer(1, len, rate);
-  const d    = buf.getChannelData(0);
-
-  // Shaped noise: exponential decay with slight tonal character
-  for (let i = 0; i < len; i++) {
-    const env = Math.pow(1 - i / len, 2);   // quadratic decay (snappier)
-    d[i] = (Math.random() * 2 - 1) * env;
-  }
+  const d      = clamp(depth / 0.4, 0, 1);
+  const dur    = CLICK_DURATION * (0.6 + d * 2);
 
   const src = ac.createBufferSource();
-  src.buffer = buf;
+  src.buffer = noiseBuffer(ac);
 
-  // Bandpass filter gives the click a "material" quality
+  // Deeper cracks sound lower and longer
+  const centre = T.voice.crackTone * (1.4 - d * 0.8);
   const flt = ac.createBiquadFilter();
   flt.type = 'bandpass';
-  flt.frequency.setValueAtTime(3000, time);
-  flt.frequency.exponentialRampToValueAtTime(200, time + CLICK_DURATION);
+  flt.frequency.setValueAtTime(centre, time);
+  flt.frequency.exponentialRampToValueAtTime(Math.max(120, centre * 0.12), time + dur);
   flt.Q.value = 2;
 
   const gn = ac.createGain();
-  gn.gain.value = CLICK_GAIN;
+  gn.gain.setValueAtTime(CLICK_GAIN * (0.5 + d * 0.7), time);
+  gn.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+  const pan = ac.createStereoPanner();
+  pan.pan.value = clamp(panPos, -1, 1);
 
   src.connect(flt);
   flt.connect(gn);
-  gn.connect(master);
-  src.start(time);
+  gn.connect(pan);
+  pan.connect(master);
+  src.start(time, Math.random() * Math.max(0, src.buffer.duration - dur));
+  src.stop(time + dur + 0.02);
 }

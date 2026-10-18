@@ -5,11 +5,13 @@
 // and triggers sounds based on what it finds.
 // ---------------------------------------------------------------------------
 
-import { W, H, LEGS_PER_BUG, SOUND_COOLDOWN, CRACK_LUM, EDGE_GRAD } from '../config.js';
-import { grad, lumAt, rgbAt } from '../wall/analysis.js';
+import { W, H, LEGS_PER_BUG, SOUND_COOLDOWN, EDGE_GRAD, EDGE_RELEASE, RIDGE_DEPTH } from '../config.js';
+import { grad, lumAt, ridgeAt, colourAt } from '../wall/analysis.js';
 import { noteFreq } from '../wall/tuning.js';
 
 const R = (a, b) => a + Math.random() * (b - a);
+const FRAME_MS = 1000 / 60;
+const MAX_STEPS = 4;
 
 export class Bug {
   /**
@@ -20,11 +22,15 @@ export class Bug {
     this.x     = R(60, W - 60);
     this.y     = R(60, H - 60);
     this.a     = R(0, Math.PI * 2);   // heading angle
-    this.last  = 0;                    // last sound timestamp
+    this.next  = { note: 0, crack: 0 }; // earliest time for the next sound of each kind (ms)
     this.hue   = (id * 70) % 360;
     this.flash = 0;                    // visual flash on sound trigger
+    this.flashAt = Infinity;           // when the scheduled sound actually plays (ms)
     this.l     = 0;                    // luminance under bug
     this.g     = 0;                    // gradient under bug
+    this.prevT = null;
+    this.edgeArmed  = true;
+    this.crackArmed = true;
 
     // Legs — 6 endpoints that follow the body with IK-like stepping
     this.legs = Array.from({ length: LEGS_PER_BUG }, (_, i) => ({
@@ -41,33 +47,18 @@ export class Bug {
    * @param {number} energy  — overall FFT energy 0-1
    * @param {number} low     — bass energy 0-1
    * @param {{ d: number, x: number, y: number }} ptr — pointer state
-   * @param {{ play, click, grid }} audio — audio interface
-   * @param {{ edo, base, scale, tempo }} T — current tuning
+   * @param {{ play, click, grid, now, started, external }} audio — audio interface
+   * @param {{ edo, base, scale, tempo, pulse, voice }} T — current tuning
    * @param {function} emit  — event emitter
    */
   step(t, energy, low, ptr, audio, T, emit) {
-    // Movement
-    const sp = 0.8 + energy * 3.5;
-    this.speed = sp;
-    this.a += Math.sin(t * 0.001 * (this.id + 1) + this.id) * 0.05 + R(-0.06, 0.06);
-
-    // Pointer attraction
-    if (ptr.d) {
-      const want = Math.atan2(ptr.y - this.y, ptr.x - this.x);
-      this.a += Math.sin(want - this.a) * 0.08;
-    }
-
-    this.x += Math.cos(this.a) * sp;
-    this.y += Math.sin(this.a) * sp + low * 0.8;
-
-    // Boundary bounce
-    if (this.x < 10 || this.x > W - 10) {
-      this.a = Math.PI - this.a;
-      this.x = Math.max(10, Math.min(W - 10, this.x));
-    }
-    if (this.y < 10 || this.y > H - 10) {
-      this.a = -this.a;
-      this.y = Math.max(10, Math.min(H - 10, this.y));
+    const dt = this.prevT === null ? 1 : Math.min(MAX_STEPS, Math.max(0, (t - this.prevT) / FRAME_MS));
+    this.prevT = t;
+    // Sample at most ~1px apart so thin cracks and edges are never stepped over.
+    const n = Math.max(1, Math.ceil(dt * (0.8 + energy * 3.5)));
+    for (let s = 0; s < n; s++) {
+      this.move(t, energy, low, ptr, dt / n);
+      this.sense(t, audio, T, emit);
     }
 
     // Leg IK
@@ -81,32 +72,70 @@ export class Bug {
       }
     }
 
-    // Sample the wall
-    this.l = lumAt(this.x, this.y);
-    this.g = grad(this.x, this.y);
+    if (t >= this.flashAt) {
+      this.flash = 1;
+      this.flashAt = Infinity;
+    }
+    this.flash *= 0.9 ** dt;
+  }
 
-    // Sound triggers — encounters still happen when only external out is live
-    const sounding = audio.started;
-    if ((sounding || audio.external) && t - this.last > SOUND_COOLDOWN) {
-      if (this.l < CRACK_LUM) {
-        // Crack — noise click
-        if (sounding) audio.click(audio.grid(T));
-        emit(this, 'crack', 0);
-        this.last  = t;
-        this.flash = 1;
-      } else if (this.g > EDGE_GRAD) {
-        // Edge — pitched note
-        const [r, , b] = rgbAt(this.x, this.y);
-        const f   = noteFreq(this.l, T);
-        const hue = (r - b + 255) / 510;
-        if (sounding) audio.play(this, f, this.g, hue, audio.grid(T));
-        emit(this, 'note', f);
-        this.last  = t;
-        this.flash = 1;
-      }
+  move(t, energy, low, ptr, dt) {
+    const sp = 0.8 + energy * 3.5;
+    this.speed = sp;
+    this.a += (Math.sin(t * 0.001 * (this.id + 1) + this.id) * 0.05) * dt + R(-0.06, 0.06) * Math.sqrt(dt);
+
+    // Pointer attraction
+    if (ptr.d) {
+      const want = Math.atan2(ptr.y - this.y, ptr.x - this.x);
+      this.a += Math.sin(want - this.a) * 0.08 * dt;
     }
 
-    this.flash *= 0.9;
+    this.x += Math.cos(this.a) * sp * dt;
+    this.y += (Math.sin(this.a) * sp + low * 0.8) * dt;
+
+    // Boundary bounce
+    if (this.x < 10 || this.x > W - 10) {
+      this.a = Math.PI - this.a;
+      this.x = Math.max(10, Math.min(W - 10, this.x));
+    }
+    if (this.y < 10 || this.y > H - 10) {
+      this.a = -this.a;
+      this.y = Math.max(10, Math.min(H - 10, this.y));
+    }
+  }
+
+  // Sounds fire on entering an edge or crack, then re-arm once the bug leaves it.
+  sense(t, audio, T, emit) {
+    this.l = lumAt(this.x, this.y);
+    this.g = grad(this.x, this.y);
+    const depth = ridgeAt(this.x, this.y);
+    if (this.g < EDGE_RELEASE) this.edgeArmed = true;
+    if (depth < RIDGE_DEPTH * 0.5) this.crackArmed = true;
+
+    const sounding = audio.started;
+    if (!(sounding || audio.external)) return;
+
+    const pan = (this.x / W) * 2 - 1;
+    if (depth > RIDGE_DEPTH && this.crackArmed && t >= this.next.crack) {
+      this.crackArmed = false;
+      const when = sounding ? audio.grid(T) : 0;
+      if (sounding) audio.click(when, depth, T, pan);
+      emit(this, 'crack', 0);
+      this.schedule(t, when, audio, 'crack');
+    } else if (this.g > EDGE_GRAD && this.edgeArmed && t >= this.next.note) {
+      this.edgeArmed = false;
+      const f = noteFreq(this.l, T);
+      const when = sounding ? audio.grid(T) : 0;
+      if (sounding) audio.play(this, f, { g: this.g, l: this.l, ...colourAt(this.x, this.y) }, when, T);
+      emit(this, 'note', f);
+      this.schedule(t, when, audio, 'note');
+    }
+  }
+
+  schedule(t, when, audio, kind) {
+    const delay = when ? Math.max(0, (when - audio.now()) * 1000) : 0;
+    this.flashAt = Math.min(this.flashAt, t + delay);
+    this.next[kind] = t + delay + SOUND_COOLDOWN;
   }
 
   /**
