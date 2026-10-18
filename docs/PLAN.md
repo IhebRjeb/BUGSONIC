@@ -1,6 +1,6 @@
 # Plan and status
 
-Updated 2026-10-18. Spatial image-score checkpoint: `180e2de` (committed locally; deployment of this checkpoint is not verified).
+Updated 2026-10-18. Latest pushed checkpoint: `8364154` on `feature/initial-version` (deployment not verified).
 
 ## Creative direction
 
@@ -29,7 +29,7 @@ Synthetic probes confirmed repeatable scores, structural differences and mirrore
 
 Deliver a small comparison workflow before adding a new synthesizer.
 
-- [ ] Assemble three contrasting, rights-cleared real images: smooth surface, repeated structure and fractured/grainy surface. Retain synthetic fixtures for exact assertions.
+- [x] Assemble three contrasting, rights-cleared real images: smooth surface, repeated structure and fractured/grainy surface. Retain synthetic fixtures for exact assertions. See `walls/index.json` (photos and the projected artwork by the repo owner).
 - [x] Record score version and seed; add repeatable restart with controlled simulation steps and random sources. Score v2; seed = hash of the wall's pixels; fixed 60 Hz steps follow the audio clock; one seeded stream per bug. Not bit-identical audio.
 - [x] Add feedback toggle and note/click mute (each layer on its own bus, including its delay send). Output level now scales the delay send too. Loudness matching between walls waits for the RMS measurement in milestone 2; comparisons currently share one output level.
 - [x] Mark the sampled location when a sound is heard (ring = note, cross = click). Optional Inspect overlay: edges, cracks, silent pulse columns and the audible step.
@@ -37,7 +37,24 @@ Deliver a small comparison workflow before adding a new synthesizer.
 
 Acceptance: same image/seed/settings reproduce the event sequence with feedback off in controlled tests; flat, stripe and ridge fixtures retain their expected distinctions. Scheduled markers identify the source coordinates. No stale events follow a wall switch. Compare matched-level recordings without image labels and document which images remain distinguishable and which mappings need adjustment.
 
-Verified so far: a headless run of the real bug, clock and grid modules gives identical 300-event sequences across repeats and at 30, 47.3, 60 and 144 FPS; a different seed differs; waits stay within one beat, no step holds more than 3 sounds, none land on silent steps. A sparse left-heavy pulse rested 199 of 375 encounters. In the browser with sound on and feedback off, two restarts produced the same 19 events. Hidden or heavily throttled tabs drop simulation time (by design), which breaks replay. Outstanding: the real-photo set and the listening comparison.
+Verified so far: a headless run of the real bug, clock and grid modules gives identical 300-event sequences across repeats and at 30, 47.3, 60 and 144 FPS; a different seed differs; waits stay within one beat, no step holds more than 3 sounds, none land on silent steps. A sparse left-heavy pulse rested 199 of 375 encounters. In the browser with sound on and feedback off, two restarts produced the same 19 events. Hidden or heavily throttled tabs drop simulation time (by design), which breaks replay.
+
+Real-photo scores (upload path in the browser; 60 s headless runs, 4 bugs, feedback off):
+
+| Wall | edges / cracks / texture / repeat | EDO, root, tempo | pulse | events (notes/clicks) | note range |
+|---|---|---|---|---|---|
+| Djerba eye (smooth) | 0.024 / 0.018 / 0.34 / 0 | 10, 100 Hz, 91 bpm | `xxxxxxx...x.....` | 219 (166/53) | 100–230 Hz |
+| Lafayette Earth (repeated) | 0.082 / 0.109 / 0.34 / 0.22 | 15, 140 Hz, 115 bpm | `.x..xxxxxxxx....` | 535 (352/183) | 154–674 Hz |
+| Ibn El Jazzar (fractured) | 0.124 / 0.177 / 0.48 / 0 | 18, 143 Hz, 119 bpm | `xxxxxx.....xxxx.` | 766 (430/336) | 143–667 Hz |
+
+Each wall replays identically and matches at 60 and 144 FPS; the three sequences differ. The smooth wall is clearly separated by density, register and pulse. Measured gaps for listening to check:
+
+- All three fall in the same FM voice family (texture 0.34–0.48 sits in the middle third), so timbre differs only by index and cutoff.
+- Repeated and fractured share nearly the same root (140/143 Hz), tempo (115/119 bpm) and note range; they differ mainly in EDO, scale, pulse and click rate.
+- The checkered suit covers too little of the frame to register as repetition (0.22 < 0.5), so harmonic FM ratios never engage on real photos.
+- Seeds come from decoded pixels, so a different JPEG decoder (browser or tool) gives a different seed for the same file.
+
+Outstanding: the blind listening comparison (same output level, labels hidden), then record which walls stay distinguishable. Mapping changes from these findings belong to milestone 3.
 
 ## 2. Give the feedback meaningful audio measurements
 
