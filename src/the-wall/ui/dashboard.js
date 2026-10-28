@@ -1,7 +1,8 @@
 import { MAX_BUGS, SCORE_VERSION } from '../config.js';
 import { getBugs } from '../bug/colony.js';
 import { getWalls } from '../wall/archive.js';
-import { isStarted } from '../audio/engine.js';
+import { isStarted, getMonitor } from '../audio/engine.js';
+import { dbfs } from '../audio/meter.js';
 import { getStats, isLinkWanted } from '../events/emitter.js';
 import { bridgeCommand, connectionHelp } from '../events/connection.js';
 
@@ -21,7 +22,7 @@ const LINK_MESSAGES = {
 export function createDashboard() {
   const ids = ['wall-id', 'wall-count', 'tempo', 'edo', 'root', 'scale', 'bug-count', 'more',
     'colony-dots', 'surface-state', 'audio-state', 'go', 'sound-label', 'spectrum', 'fps', 'ev-rate',
-    'link-state', 'connection-status', 'wsb', 'ws-url', 'ping', 'tx-count', 'listeners', 'osc-target', 'signal-log', 'score-id'];
+    'link-state', 'connection-status', 'wsb', 'ws-url', 'ping', 'tx-count', 'listeners', 'osc-target', 'signal-log', 'score-id', 'meter'];
   const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
   document.getElementById('bridge-command').textContent = bridgeCommand();
   els['connection-status'].textContent = LINK_MESSAGES.off();
@@ -137,6 +138,14 @@ export function createDashboard() {
     }
 
     const { width, height } = els.spectrum;
+    const m = running ? getMonitor()?.snapshot() : null;
+    if (m) {
+      const db = (v) => (v > 0 ? dbfs(v).toFixed(1) : '−∞');
+      const faults = m.clamped + m.nonFinite;
+      els.meter.textContent = `OUT ${db(m.rms)} dBFS · PEAK ${db(m.peak)} · LIMIT ${(-dbfs(m.minGain)).toFixed(1)} dB${faults ? ` · GUARD ${faults}` : ''}`;
+    } else {
+      els.meter.textContent = 'OUT — dBFS · PEAK — · LIMIT —';
+    }
     const step = width / SPECTRUM_BARS;
     spectrum.clearRect(0, 0, width, height);
     for (let i = 0; i < SPECTRUM_BARS; i++) {

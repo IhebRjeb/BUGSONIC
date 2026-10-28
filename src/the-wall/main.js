@@ -5,15 +5,18 @@
 // events, input, and UI controls.
 // ---------------------------------------------------------------------------
 
-import { init as initArchive, newWall, getCurrent } from './wall/archive.js';
+import '@fontsource/kalam/latin-400.css';
+import '@fontsource/kalam/latin-700.css';
+import { init as initArchive, newWall, getCurrent, select } from './wall/archive.js';
+import { loadCollection } from './wall/collection.js';
 import { mkCanvas } from './wall/Wall.js';
 import { measure } from './wall/analysis.js';
 import { init as initColony, restart as restartColony, getBugs } from './bug/colony.js';
-import { isStarted } from './audio/engine.js';
-import { play, click, cancelPending } from './audio/synth.js';
+import { isStarted, getLevel } from './audio/engine.js';
+import { play, click, cancelPending, isLayerOn } from './audio/synth.js';
 import { nextStep, audioTime, reset as resetGrid } from './audio/grid.js';
 import { init as initEmitter, emit, emitWall, emitState, isExternalActive } from './events/emitter.js';
-import { init as initLoop, frame } from './feedback/loop.js';
+import { init as initLoop, frame, resetResponse } from './feedback/loop.js';
 import * as clock from './sim/clock.js';
 import { addMark, cancelAfter, clearMarks } from './ui/marks.js';
 import { invalidate as invalidateInspect } from './ui/inspect.js';
@@ -21,6 +24,9 @@ import { initPointer } from './input/pointer.js';
 import { initKeyboard } from './input/keyboard.js';
 import { initControls } from './ui/controls.js';
 import { createDashboard } from './ui/dashboard.js';
+import { initTake } from './ui/take.js';
+import { initFieldNote } from './ui/fieldnote.js';
+import { initProbe } from './ui/probe.js';
 
 // --- DOM ---
 const $ = (id) => document.getElementById(id);
@@ -58,6 +64,7 @@ function restart() {
   measure(liveCtx);
   restartColony(w.seed);
   clock.reset();
+  resetResponse();
   clearMarks();
   invalidateInspect();
 }
@@ -70,6 +77,7 @@ initArchive({
   liveCtx,
   onSelect: (wall) => {
     cancelScheduled();
+    resetResponse();
     invalidateInspect();
     dashboard.select(wall);
     emitWall(wall);
@@ -91,6 +99,7 @@ const audioAPI = {
   next: nextStep,
   time: audioTime,
   mark: addMark,
+  audible: (kind) => isStarted() && isLayerOn(kind) && getLevel() > 0,
 };
 
 // Feedback loop
@@ -135,7 +144,36 @@ const actions = initControls({
 // Keyboard
 initKeyboard(actions);
 
-// --- Start ---
-newWall();
-restart();
-requestAnimationFrame(frame);
+// Comparison takes
+initTake({
+  button: $('take'),
+  status: $('take-status'),
+  canvas: cv,
+  noteLayer: $('layer-note'),
+  crackLayer: $('layer-crack'),
+  restart,
+});
+
+// Surface probe and the field note (manifesto)
+initProbe(cv, $('probe'));
+initFieldNote({
+  dialog: $('manifesto'),
+  wake: $('note-wake'),
+  silent: $('note-silent'),
+  reopen: $('field-note'),
+  soundOn: isStarted,
+  startSound: actions.toggleSound,
+});
+
+// --- Start: the walls/ collection, or a generated wall if it is empty ---
+loadCollection().then(({ walls, failed }) => {
+  if (walls.length) {
+    select(walls[0]);
+    $('upload-status').textContent = `${walls.length} wall${walls.length > 1 ? 's' : ''} from the collection` +
+      (failed.length ? `; could not read ${failed.join(', ')}` : '') + '. Keys 1–9 switch walls.';
+  } else {
+    newWall();
+  }
+  restart();
+  requestAnimationFrame(frame);
+});

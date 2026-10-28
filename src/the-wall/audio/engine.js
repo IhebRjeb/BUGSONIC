@@ -1,75 +1,126 @@
 // ---------------------------------------------------------------------------
 // BUGSONIC / THE WALL — audio engine
 // ---------------------------------------------------------------------------
-// Sets up the AudioContext and wires the effects chain.
-// Exposes the analyser for FFT reads and nodes for synth routing.
+// voices -> layer buses -> drive (fixed) -> effects chain -> output worklet
+//   (output level, sample-peak protection, measurement tap) -> destination
+//
+// The output level acts after the effects, so it also controls their tails.
+// Browser sound needs the worklet: if it cannot load, sound stays off rather
+// than playing unprotected.
 // ---------------------------------------------------------------------------
 
-import { FFT_SIZE, MASTER_GAIN } from '../config.js';
+import {
+  FFT_SIZE, MASTER_GAIN, METER_HOP, OUTPUT_CEILING, OUTPUT_LOOKAHEAD, OUTPUT_RELEASE, OUTPUT_RAMP, OUTPUT_MAX,
+} from '../config.js';
 import { buildEffectsChain } from './effects.js';
+import { createMonitor } from './monitor.js';
+
+const workletUrl = new URL('./output.worklet.js', import.meta.url);
 
 let ac       = null;
-let master   = null;   // master gain -> effects chain input
-let send     = null;   // delay send, scaled by the same output level
-let analyser = null;
+let master   = null;   // fixed drive into the effects chain
+let send     = null;   // fixed note-delay send
+let chain    = null;
+let output   = null;   // AudioWorkletNode: level + protection + tap
+let analyser = null;   // spectrum display and legacy feedback, after the output
 let fdata    = null;
+let monitor  = null;
 let started  = false;
-let level = MASTER_GAIN;
+let level    = MASTER_GAIN;
+const listeners = new Set();
 
-/**
- * Create the AudioContext and wire the master chain.
- * Must be called from a user gesture.
- */
-export function initAudio() {
-  ac = new (window.AudioContext || window.webkitAudioContext)();
+const outputGain = (v) => v / MASTER_GAIN;
 
-  // Master gain sits before the effects chain
+function buildChain() {
+  const old = [master, send, chain?.output];
   master = ac.createGain();
-  master.gain.value = level;
-
-  // Build the full effects chain and get its entry point
-  const chain = buildEffectsChain(ac);
+  master.gain.value = MASTER_GAIN;
+  chain = buildEffectsChain(ac);
   master.connect(chain.input);
-
   send = ac.createGain();
-  send.gain.value = level;
+  send.gain.value = MASTER_GAIN;
   send.connect(chain.delaySend);
-
-  analyser = chain.analyser;
-  fdata    = new Uint8Array(analyser.frequencyBinCount);
-
-  started = true;
+  chain.output.connect(output);
+  for (const node of old) node?.disconnect();
 }
 
 /**
- * Toggle audio on/off. Returns the new state string.
+ * Create the audio graph. Pass a context for offline rendering; otherwise a
+ * live AudioContext is created (call from a user gesture).
  */
+export async function initAudio(context) {
+  const ctx = context ?? new (window.AudioContext || window.webkitAudioContext)();
+  await ctx.audioWorklet.addModule(workletUrl);
+  ac = ctx;
+  output = new AudioWorkletNode(ac, 'bugsonic-output', {
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    outputChannelCount: [2],
+    processorOptions: { ceiling: OUTPUT_CEILING, lookahead: OUTPUT_LOOKAHEAD, release: OUTPUT_RELEASE, hop: METER_HOP },
+  });
+  output.parameters.get('gain').value = outputGain(level);
+  monitor = createMonitor(ac.sampleRate);
+  output.port.onmessage = (e) => {
+    monitor.push(e.data);
+    for (const fn of listeners) fn(e.data);
+  };
+  analyser = ac.createAnalyser();
+  analyser.fftSize = FFT_SIZE;
+  fdata = new Uint8Array(analyser.frequencyBinCount);
+  output.connect(analyser);
+  output.connect(ac.destination);
+  buildChain();
+  started = true;
+  return ac;
+}
+
+/** Toggle audio on/off. Returns the new state string. */
 export async function toggle() {
   if (!started) {
-    initAudio();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      await initAudio(ctx);
+    } catch (error) {
+      ctx.close();
+      throw error;
+    }
     await ac.resume();
     return ac.state === 'running' ? 'on' : 'off';
   } else if (ac.state === 'running') {
     await ac.suspend();
     return 'off';
   }
+  monitor.reset();
   await ac.resume();
   return ac.state === 'running' ? 'on' : 'off';
 }
 
+/** Output level (0 to OUTPUT_MAX; MASTER_GAIN = unity). Ramps to the exact value. */
 export function setLevel(value) {
   if (!Number.isFinite(value)) return;
-  level = Math.max(0, Math.min(.7, value));
-  if (master) {
-    master.gain.setTargetAtTime(level, ac.currentTime, .03);
-    send.gain.setTargetAtTime(level, ac.currentTime, .03);
-  }
+  level = Math.max(0, Math.min(OUTPUT_MAX, value));
+  if (!output) return;
+  const g = output.parameters.get('gain');
+  const t = ac.currentTime;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(outputGain(level), t + OUTPUT_RAMP);
 }
 
-/**
- * Read FFT frequency data into the shared buffer.
- * Returns { energy, low, bands }.
- */
+/** Replace the effects chain: drops every running tail (clean comparison takes). */
+export function resetEffects() {
+  if (!started) return;
+  buildChain();
+  monitor.reset();
+}
+
+/** Subscribe to output blocks ({ l, r, frame, minGain, clamped, nonFinite, ... }). */
+export function onBlock(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+/** Legacy byte FFT of the protected output. Returns { energy, low, bands }. */
 export function readFFT() {
   if (!started || ac.state !== 'running') {
     return { energy: 0, low: 0, bands: null };
@@ -91,4 +142,6 @@ export function readFFT() {
 export function getContext()   { return ac; }
 export function getMaster()    { return master; }
 export function getDelay()     { return send; }
+export function getMonitor()   { return monitor; }
+export function getLevel()     { return level; }
 export function isStarted()    { return started && ac.state === 'running'; }

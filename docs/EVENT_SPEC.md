@@ -7,7 +7,7 @@ browser ──JSON──▶ ws://127.0.0.1:9980 (bridge) ──JSON──▶ oth
                                             └──OSC───▶ udp://127.0.0.1:7000
 ```
 
-Browser sound and external out are independent. With browser sound off and the link live, bugs keep emitting events, so an external tool can be the only sound source. An event is sent when its encounter is placed on the wall's pulse, not when it plays: the sound follows within about one beat (use `tempo` and `pulse` from the `wall` message to quantise on the receiving side). Encounters that find no free active step within one beat rest and send nothing, with or without browser sound.
+Browser sound and external out are independent. With browser sound off and the link live, bugs keep emitting events, so an external tool can be the only sound source. An event is sent when its encounter is placed on the wall's pulse, not when it plays: the sound follows within 1.25 beats (use `tempo` and `pulse` from the `wall` message to quantise on the receiving side). Encounters that find no free active step among the next five steps rest and send nothing, with or without browser sound.
 
 Every message has `v` (protocol version, `1`), `kind` and `t` (seconds since page load).
 
@@ -54,7 +54,7 @@ Enabled with **Stream creature positions**. Dropped (not queued) if the connecti
 {"v":1,"kind":"state","t":12.2,"energy":0.31,"bugs":[{"id":0,"nx":0.41,"ny":0.62,"heading":4.12,"flash":0.35}]}
 ```
 
-`heading` is in radians (0–2π). `flash` is 1 at the moment a bug sounds and decays toward 0.
+`heading` is in radians (0–2π). `flash` is 1 at the moment a bug sounds and decays toward 0. `energy` is the browser's measured output RMS through a fixed transfer: −60 dBFS → 0, −12 dBFS → 1, clamped (0 while browser sound is off). Since 2026-10-28 it replaces a byte-FFT average; the 0–1 range is unchanged.
 
 ## `hello`, `ping`, `bridge`
 

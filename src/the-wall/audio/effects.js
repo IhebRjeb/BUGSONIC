@@ -1,11 +1,11 @@
 // ---------------------------------------------------------------------------
 // BUGSONIC / THE WALL — effects chain
 // ---------------------------------------------------------------------------
-// Builds the master effects chain:
-//   voices -> [distortion] -> [chorus] -> [delay] -> [reverb] -> compressor -> destination
+// Builds the effects chain:
+//   voices -> [distortion] -> [chorus] -> [delay] -> [reverb] -> compressor -> output
 //
-// Each effect has a dry/wet mix. The chain is created once at audio init
-// and exposes send nodes for the synth to connect to.
+// Each effect has a dry/wet mix. The engine connects the output to the final
+// output processor and can rebuild the chain to drop all tails.
 // ---------------------------------------------------------------------------
 
 import {
@@ -15,12 +15,9 @@ import {
   CHORUS_RATE, CHORUS_DEPTH, CHORUS_WET,
   COMP_THRESHOLD, COMP_KNEE, COMP_RATIO, COMP_ATTACK, COMP_RELEASE,
 } from '../config.js';
+import { mulberry32 } from '../sim/rng.js';
 
-// Nodes exposed to the rest of the audio system
-let inputNode    = null;   // connect voices here
-let delaySend    = null;   // connect voices here for delay send
-let analyserNode = null;   // for FFT reads
-let outputNode   = null;   // final output (destination)
+const IMPULSE_SEED = 0x5EED0001;   // the same room every time the chain is built
 
 // ---------------------------------------------------------------------------
 // Waveshaper distortion
@@ -159,12 +156,13 @@ function generateImpulse(ac, decay, length = 2) {
   const rate    = ac.sampleRate;
   const samples = rate * length;
   const buf     = ac.createBuffer(2, samples, rate);
+  const rng     = mulberry32(IMPULSE_SEED);
 
   for (let ch = 0; ch < 2; ch++) {
     const data = buf.getChannelData(ch);
     for (let i = 0; i < samples; i++) {
       // Exponential decay with random noise
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / samples, decay);
+      data[i] = (rng() * 2 - 1) * Math.pow(1 - i / samples, decay);
     }
   }
   return buf;
@@ -215,9 +213,9 @@ function createCompressor(ac) {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the full effects chain. Call once after AudioContext is created.
- * @param {AudioContext} ac
- * @returns {{ input: GainNode, delaySend: GainNode, analyser: AnalyserNode }}
+ * Build the full effects chain. The caller connects `output` onward.
+ * @param {BaseAudioContext} ac
+ * @returns {{ input: GainNode, delaySend: GainNode, output: DynamicsCompressorNode }}
  */
 export function buildEffectsChain(ac) {
   const dist    = createDistortion(ac);
@@ -225,35 +223,11 @@ export function buildEffectsChain(ac) {
   const delay   = createDelay(ac);
   const reverb  = createReverb(ac);
   const comp    = createCompressor(ac);
-  const analyser = ac.createAnalyser();
-  analyser.fftSize = 256;
 
-  // Chain: input -> distortion -> chorus -> delay(dry path) -> reverb -> compressor -> analyser -> destination
   dist.output.connect(chorus.input);
   chorus.output.connect(delay.input);
   delay.output.connect(reverb.input);
   reverb.output.connect(comp);
-  comp.connect(analyser);
-  analyser.connect(ac.destination);
 
-  inputNode    = dist.input;
-  delaySend    = delay.send;
-  analyserNode = analyser;
-
-  return { input: inputNode, delaySend, analyser: analyserNode };
+  return { input: dist.input, delaySend: delay.send, output: comp };
 }
-
-/**
- * Get the main input node (voices connect here).
- */
-export function getInput()     { return inputNode; }
-
-/**
- * Get the delay send node (voices connect here for echo).
- */
-export function getDelaySend() { return delaySend; }
-
-/**
- * Get the analyser node (for FFT reads).
- */
-export function getAnalyser()  { return analyserNode; }

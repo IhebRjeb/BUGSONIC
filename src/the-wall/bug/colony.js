@@ -44,9 +44,9 @@ export function stepAll(t, energy, low, ptr, audio, T, emit) {
 /**
  * Draw all bugs.
  */
-export function drawAll(ctx) {
+export function drawAll(ctx, still = false) {
   for (const b of bugs) {
-    b.draw(ctx);
+    b.draw(ctx, still);
   }
 }
 

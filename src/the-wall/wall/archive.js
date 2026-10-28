@@ -37,14 +37,15 @@ export function init(opts) {
 }
 
 /**
- * Add a wall from a source canvas and select it.
+ * Add a wall from a source canvas; selects it unless told not to.
  */
-export function addWall(source, name) {
+export function addWall(source, name, { select: pick = true, title } = {}) {
   const w = new Wall(source, name);
+  if (title) w.th.title = `${w.id} · ${title}`;
   w.th.onclick = () => select(w);
   archEl.appendChild(w.th);
   walls.push(w);
-  select(w);
+  if (pick) select(w);
   return w;
 }
 
@@ -81,34 +82,38 @@ export function newWall() {
 }
 
 /**
- * Load a photo file into the archive.
+ * Load an image (URL) into a wall canvas, cover-cropped to the wall size.
+ * Uploads and the walls/ collection use this same path, so the same file
+ * gives the same pixels and seed in a given browser.
  */
-export function loadPhoto(file) {
+export function loadImage(src) {
   return new Promise((resolve, reject) => {
     const im = new Image();
-    const url = URL.createObjectURL(file);
     im.onload = () => {
-      try {
-        const c = mkCanvas();
-        const ctx = c.getContext('2d');
-        // Transparent pixels would otherwise read as black cracks.
-        ctx.fillStyle = '#c3c7bc';
-        ctx.fillRect(0, 0, W, H);
-        const s = Math.max(W / im.width, H / im.height);
-        ctx.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s);
-        resolve(addWall(c, file.name));
-      } catch (error) {
-        reject(error);
-      } finally {
-        URL.revokeObjectURL(url);
-      }
+      const c = mkCanvas();
+      const ctx = c.getContext('2d');
+      // Transparent pixels would otherwise read as black cracks.
+      ctx.fillStyle = '#c3c7bc';
+      ctx.fillRect(0, 0, W, H);
+      const s = Math.max(W / im.width, H / im.height);
+      ctx.drawImage(im, (W - im.width * s) / 2, (H - im.height * s) / 2, im.width * s, im.height * s);
+      resolve(c);
     };
-    im.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('This image could not be read. Try a JPG, PNG or WebP.'));
-    };
-    im.src = url;
+    im.onerror = () => reject(new Error('This image could not be read. Try a JPG, PNG or WebP.'));
+    im.src = src;
   });
+}
+
+/**
+ * Load a photo file into the archive.
+ */
+export async function loadPhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    return addWall(await loadImage(url), file.name);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 /**

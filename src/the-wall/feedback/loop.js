@@ -2,25 +2,32 @@
 // BUGSONIC / THE WALL — main animation loop
 // ---------------------------------------------------------------------------
 // Runs every frame via requestAnimationFrame. Orchestrates:
-//   1. FFT read
-//   2. Spectrum shearing + healing (shearing only while feedback is on)
-//   3. Luminance re-measurement
-//   4. Fixed simulation steps for the bugs
-//   5. Drawing: wall, inspection overlay, sound marks, bugs
+//   1. Fixed simulation steps. Every RESPONSE_EVERY steps the feedback
+//      response advances from the measured output and the live wall is
+//      rebuilt and re-measured, so feedback timing follows simulation time,
+//      not the display rate.
+//   2. Drawing: wall, inspection overlay, sound marks, bugs.
+// With reduced motion the display shows the working surface unshifted; the
+// bugs still read the live wall.
 // ---------------------------------------------------------------------------
 
-import { W, H, MEASURE_EVERY } from '../config.js';
-import { readFFT } from '../audio/engine.js';
-import { shearAndHeal } from './shear.js';
+import { W, H, SIM_HZ, RESPONSE_EVERY, DEPTH_FLOOR_DB, DEPTH_RANGE_DB } from '../config.js';
+import { readFFT, getMonitor, isStarted } from '../audio/engine.js';
+import { dbfs } from '../audio/meter.js';
+import { createResponse, depthOf } from './response.js';
+import { renderLive } from './render.js';
 import { measure } from '../wall/analysis.js';
 import { stepAll, drawAll } from '../bug/colony.js';
 import { getTuning } from '../wall/archive.js';
 import * as clock from '../sim/clock.js';
-import { drawMarks } from '../ui/marks.js';
+import { drawMarks, heardBetween } from '../ui/marks.js';
 import { drawInspect } from '../ui/inspect.js';
+import { reducedMotion } from '../ui/motion.js';
 
-let frameCount = 0;
 let feedback = true;
+let lastUpdate = 0;
+const response = createResponse();
+const quiet = { depth: 0, low: 0, strips: [] };
 
 // References set by init()
 let displayCtx = null;
@@ -47,45 +54,66 @@ export function init(opts) {
 }
 
 /**
- * Feedback off: sound no longer shears the wall or drives the bugs, so a
+ * Feedback off: sound no longer moves the wall or drives the bugs, so a
  * seeded performance repeats its encounters.
  */
 export function setFeedback(on) {
   feedback = !!on;
 }
 
+export function isFeedback() { return feedback; }
+
+/** The wall changed or restarted: drop any displacement. */
+export function resetResponse() {
+  response.reset();
+  lastUpdate = clock.now();
+}
+
+// Measured output as bounded 0-1 controls (zero while browser sound is off).
+function measured() {
+  const m = isStarted() ? getMonitor()?.snapshot() : null;
+  if (!m) return quiet;
+  return {
+    depth: depthOf(m.rms),
+    low: Math.max(0, Math.min(1, (dbfs(Math.sqrt(m.bands[0])) - DEPTH_FLOOR_DB) / DEPTH_RANGE_DB)),
+    strips: m.strips,
+  };
+}
+
+function updateSurface(m) {
+  const now = clock.now();
+  const impulses = heardBetween(lastUpdate, now);
+  const offsets = response.advance(Math.max(0, now - lastUpdate), feedback ? { ...m, impulses } : null);
+  lastUpdate = now;
+  renderLive(liveCtx, wallCv, offsets);
+  measure(liveCtx);
+}
+
 /**
  * Single frame tick — called by requestAnimationFrame.
  */
 export function frame(t) {
-  const { energy, low, bands } = readFFT();
+  const { bands } = readFFT();
   const T = getTuning();
-
-  // Shear + heal (healing continues so a sheared wall recovers)
-  shearAndHeal(liveCtx, liveCv, wallCv, feedback ? bands : null);
-
-  // Re-measure luminance periodically
-  if (frameCount++ % MEASURE_EVERY === 0) {
-    measure(liveCtx);
-  }
-
-  // Draw the live wall to the display canvas
-  displayCtx.drawImage(liveCv, 0, 0);
-
-  // Darkness overlay (inversely proportional to energy)
-  displayCtx.fillStyle = `rgba(0,0,0,${0.04 + (1 - energy) * 0.06})`;
-  displayCtx.fillRect(0, 0, W, H);
+  const m = measured();
 
   const steps = clock.advance(t);
   for (let i = 0; i < steps; i++) {
     clock.tick();
-    if (T) stepAll(clock.now() * 1000, feedback ? energy : 0, feedback ? low : 0, ptr, audioAPI, T, emitFn);
+    if (Math.round(clock.now() * SIM_HZ) % RESPONSE_EVERY === 0) updateSurface(m);
+    if (T) stepAll(clock.now() * 1000, feedback ? m.depth : 0, feedback ? m.low : 0, ptr, audioAPI, T, emitFn);
   }
+
+  const still = reducedMotion();
+  displayCtx.drawImage(still ? wallCv : liveCv, 0, 0);
+  displayCtx.fillStyle = `rgba(0,0,0,${still ? 0.07 : 0.04 + (1 - m.depth) * 0.06})`;
+  displayCtx.fillRect(0, 0, W, H);
+
   const simT = clock.now();
   drawInspect(displayCtx, T, simT);
   drawMarks(displayCtx, simT);
-  drawAll(displayCtx);
-  onFrame?.(t, bands, energy);
+  drawAll(displayCtx, still);
+  onFrame?.(t, bands, m.depth);
 
   requestAnimationFrame(frame);
 }
