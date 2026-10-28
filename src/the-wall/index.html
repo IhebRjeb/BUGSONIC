@@ -145,7 +145,11 @@
         <h2 id="note-title" class="note-stamp">Field note 001 — The Wall</h2>
         <p class="note-meta">a living system, not a recording.</p>
       </header>
-      <div class="note-body">
+      <div class="note-views" role="group" aria-label="Field note view">
+        <button id="note-read" aria-pressed="true" aria-controls="note-typeset">01 / Read the manifesto</button>
+        <button id="note-source" aria-pressed="false" aria-controls="note-original">02 / Original scan <span aria-hidden="true">↗</span></button>
+      </div>
+      <div id="note-typeset" class="note-body">
         <section class="note-text">
           <p class="note-lead">A wall is never silent.</p>
           <p>Beneath its paint, its cracks and its scars, there is a landscape waiting to be explored.</p>
@@ -206,10 +210,23 @@
           </svg>
         </figure>
       </div>
+      <section id="note-original" class="note-original" aria-label="Original handwritten field note" hidden>
+        <div class="note-source-tools">
+          <p>Before the pixels, a page.</p>
+          <button id="note-zoom" aria-pressed="false" aria-controls="note-scan-view">Enlarge scan <span aria-hidden="true">＋</span></button>
+          <a id="note-full-image" href="./assets/field-note-001.jpg" target="_blank" rel="noopener">Open full image <span aria-hidden="true">↗</span><span class="note-sr-only"> (new tab)</span></a>
+        </div>
+        <figure class="note-source-figure">
+          <div id="note-scan-view" class="note-scan-view" tabindex="0" role="region" aria-label="Original scan viewer" aria-describedby="note-scan-caption">
+            <img src="./assets/field-note-001.jpg" width="1612" height="2196" loading="lazy" decoding="async" alt="Original Field Note 001: a large black-ink portrait with BUGSONIC and the blue motto ‘Small creatures. Living surfaces. Unstable sounds.’ on the forehead. A red title frame sits above, handwritten manifesto text and two smaller figures on the left. The readable manifesto is available in the first view.">
+          </div>
+          <figcaption id="note-scan-caption">001 / Source document · original framing, paper and ink.<br>Enlarge to explore the handwriting; scroll or use arrow keys inside the viewer.</figcaption>
+        </figure>
+      </section>
       <footer class="note-actions">
         <button id="note-wake" class="note-wake"><span class="note-wake-label">Wake the wall</span> <span aria-hidden="true">▶ sound on</span></button>
         <button id="note-silent" class="note-silent">Enter without sound</button>
-        <p class="note-sign">turn the page →</p>
+        <button id="note-turn" class="note-sign" aria-controls="note-typeset note-original" aria-label="Turn the page to the original scan">turn the page →</button>
       </footer>
     </article>
   </dialog>

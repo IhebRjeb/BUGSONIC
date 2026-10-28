@@ -22,12 +22,49 @@ const remember = () => {
  *           reopen: HTMLButtonElement, soundOn: () => boolean, startSound: () => void }} els
  */
 export function initFieldNote({ dialog, wake, silent, reopen, soundOn, startSound }) {
+  const page = dialog.querySelector('.note-page');
+  const read = dialog.querySelector('#note-read');
+  const source = dialog.querySelector('#note-source');
+  const typeset = dialog.querySelector('#note-typeset');
+  const original = dialog.querySelector('#note-original');
+  const zoom = dialog.querySelector('#note-zoom');
+  const viewer = dialog.querySelector('#note-scan-view');
+  const turn = dialog.querySelector('#note-turn');
+  // Vite rewrites img.src in HTML, but not ordinary anchor href attributes.
+  dialog.querySelector('#note-full-image').href = viewer.querySelector('img').src;
+
+  function setZoom(enlarged) {
+    viewer.classList.toggle('is-zoomed', enlarged);
+    zoom.setAttribute('aria-pressed', String(enlarged));
+    zoom.textContent = enlarged ? 'Fit whole page −' : 'Enlarge scan ＋';
+    viewer.scrollTop = 0;
+    viewer.scrollLeft = 0;
+  }
+
+  function showSource(show) {
+    typeset.hidden = show;
+    original.hidden = !show;
+    // Load on explicit request, even if a hidden tab delays lazy-load observers.
+    if (show) viewer.querySelector('img').loading = 'eager';
+    read.setAttribute('aria-pressed', String(!show));
+    source.setAttribute('aria-pressed', String(show));
+    turn.textContent = show ? '← back to the manifesto' : 'turn the page →';
+    turn.setAttribute('aria-label', show ? 'Turn the page back to the manifesto' : 'Turn the page to the original scan');
+    setZoom(false);
+    page.scrollTop = 0;
+  }
+
+  read.onclick = () => showSource(false);
+  source.onclick = () => showSource(true);
+  turn.onclick = () => showSource(original.hidden);
+  zoom.onclick = () => setZoom(zoom.getAttribute('aria-pressed') !== 'true');
+
   function open() {
     if (dialog.open) return;
+    showSource(false);
     wake.querySelector('.note-wake-label').textContent = soundOn() ? 'Return to the wall' : 'Wake the wall';
     dialog.classList.remove('closing');
     dialog.showModal();
-    const page = dialog.querySelector('.note-page');
     page.focus({ preventScroll: true });
     page.scrollTop = 0;
   }

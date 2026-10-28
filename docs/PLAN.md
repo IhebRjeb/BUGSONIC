@@ -41,7 +41,7 @@ These are designed artistic mappings, not predictions of an object's physical so
 - Comparison takes (isolated effects, seeded restart, 60 + 4 s float WAV and JSON record) and an offline RMS-matching/anonymizing tool.
 - Protocol v1, silent external mode, reconnecting WebSocket output and a local OSC bridge.
 - Hosted connection guidance with explicit origin permission. Hosted-to-loopback WebSocket access was tested; browser local-network restrictions still vary.
-- Field note 001 manifesto, header reopening, hover probe and specimen labels. The supplied handwritten reference guides the UI: white paper, black drawing, red frame and blue annotations; locally bundled Kalam for expressive text, monospace for measurements. The scan itself is not bundled. Audio mapping is unchanged.
+- Field note 001 manifesto, header reopening, hover probe and specimen labels. The supplied handwritten reference guides the UI: white paper, black drawing, red frame and blue annotations; locally bundled Kalam for expressive text, monospace for measurements. The original scan is bundled as a separate source-document view with fit/enlarge controls and a full-image link, not added to the playable wall collection. Audio mapping is unchanged.
 
 Automated and browser checks establish determinism, routing, protection and bounds. They do not establish perceptual distinctiveness or finished musical calibration.
 
