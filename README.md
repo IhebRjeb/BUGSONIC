@@ -19,7 +19,7 @@ Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `
 
 ## Use it
 
-0. On a first visit, **Field note 001** (the manifesto) opens over the wall: **Wake the wall** starts sound, **Enter without sound** or `Esc` closes it. Reopen it from the header.
+0. On a first visit, **Field note 001** (the manifesto) opens over the wall: **Wake the wall** starts sound, **Enter without sound** or `Esc` closes it. Reopen it from the header. Its white-paper, black/red/blue ink treatment is inspired by the supplied handwritten note, not a reproduction of the scan. Kalam is bundled locally; controls and measurements keep a monospace font.
 1. **Wake the wall** to start browser sound (requires a tap — browser policy).
 2. The photos in [walls/](walls/README.md) load at start; keys `1`-`9` switch walls. **Bring your own** adds another image for the session.
 3. **Drag** on the wall to scratch a crack. Bugs steer toward your pointer and click on cracks. Hovering shows what a bug would read there: position, luminance, edge gradient, crack depth.

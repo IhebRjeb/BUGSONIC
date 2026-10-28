@@ -5,6 +5,8 @@
 // events, input, and UI controls.
 // ---------------------------------------------------------------------------
 
+import '@fontsource/kalam/latin-400.css';
+import '@fontsource/kalam/latin-700.css';
 import { init as initArchive, newWall, getCurrent, select } from './wall/archive.js';
 import { loadCollection } from './wall/collection.js';
 import { mkCanvas } from './wall/Wall.js';

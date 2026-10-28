@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#c3c7bc">
+  <meta name="theme-color" content="#f3f2ed">
   <meta name="description" content="A living audiovisual instrument. Small creatures read a surface, turn its traces into sound, and send every encounter to your own tools.">
   <title>BUGSONIC — The Wall / living instrument</title>
   <link rel="icon" type="image/svg+xml" href="./ui/favicon.svg">
@@ -141,15 +141,12 @@
 
   <dialog id="manifesto" class="field-note" aria-labelledby="note-title">
     <article class="note-page" tabindex="-1">
-      <span class="note-tape" aria-hidden="true"></span>
       <header class="note-head">
-        <p class="note-stamp">FIELD NOTE 001 — THE WALL</p>
-        <p class="note-meta" aria-hidden="true">specimen sheet · obs. 480×640 px · n = 4–8</p>
+        <h2 id="note-title" class="note-stamp">Field note 001 — The Wall</h2>
+        <p class="note-meta">a living system, not a recording.</p>
       </header>
       <div class="note-body">
         <section class="note-text">
-          <h2 id="note-title" class="note-title">BUG<span>S</span>ONIC</h2>
-          <p class="note-motto">Small creatures.<br>Living surfaces.<br>Unstable sounds.</p>
           <p class="note-lead">A wall is never silent.</p>
           <p>Beneath its paint, its cracks and its scars, there is a landscape waiting to be explored.</p>
           <p>We introduce small digital creatures into this landscape. They crawl, hesitate, collide, and listen. They read the surface through edges, shadows, textures, and fractures.</p>
@@ -160,8 +157,12 @@
           <p class="note-imperative">Observe. Disturb. Listen. Repeat.</p>
           <p class="note-lead">The wall is your instrument.</p>
         </section>
-        <figure class="note-specimen" aria-hidden="true">
-          <svg viewBox="0 0 320 420" class="specimen-drawing">
+        <figure class="note-specimen">
+          <figcaption>
+            <div class="note-title">BUG<span>S</span>ONIC</div>
+            <p class="note-motto">Small creatures.<br>Living surfaces.<br>Unstable sounds.</p>
+          </figcaption>
+          <svg viewBox="0 0 320 420" class="specimen-drawing" aria-hidden="true">
             <defs>
               <filter id="ink-wobble"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
             </defs>
@@ -193,7 +194,7 @@
               <text x="72" y="394">fig. 1 — reader of walls</text>
             </g>
           </svg>
-          <svg viewBox="0 0 320 90" class="specimen-drawing traces">
+          <svg viewBox="0 0 320 90" class="specimen-drawing traces" aria-hidden="true">
             <g class="ink" filter="url(#ink-wobble)">
               <path class="draw d6" pathLength="1" d="M8 30l18 4 10-8 14 10 8-2 12 12 16-6 20 8"/>
               <path class="draw d6" pathLength="1" d="M176 34h18c6-20 10 20 16 0s10-16 14 0 8 10 12 0 6-6 10 0h18"/>
@@ -208,7 +209,7 @@
       <footer class="note-actions">
         <button id="note-wake" class="note-wake"><span class="note-wake-label">Wake the wall</span> <span aria-hidden="true">▶ sound on</span></button>
         <button id="note-silent" class="note-silent">Enter without sound</button>
-        <p class="note-sign">— BUGSONIC / THE WALL</p>
+        <p class="note-sign">turn the page →</p>
       </footer>
     </article>
   </dialog>
