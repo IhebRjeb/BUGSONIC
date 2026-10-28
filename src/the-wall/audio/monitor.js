@@ -9,19 +9,33 @@
 //           rms^2), low band smoothed more slowly
 //   flux  — positive spectral change; onsets counted above a floor,
 //           with a refractory time
+//   strips — smoothed power in SHEAR_BANDS quasi-log bands (top = low)
 // Pure: no Web Audio, so it can be tested with synthetic blocks.
 // ---------------------------------------------------------------------------
 
 import {
   METER_WINDOW, METER_BANDS, RMS_ATTACK, RMS_RELEASE, LOW_ATTACK, LOW_RELEASE,
-  ONSET_FLOOR, ONSET_REFRACTORY,
+  ONSET_FLOOR, ONSET_REFRACTORY, SHEAR_BANDS,
 } from '../config.js';
-import { measurePcm, follow, createSpectrum, bandPowers, positiveFlux } from './meter.js';
+import { measurePcm, follow, createSpectrum, bandPowers, positiveFlux, DC_BINS } from './meter.js';
 
 const PEAK_HOLD = 1;   // s
+const STRIP_TOP_HZ = 12000;
 
-export function createMonitor(sampleRate, size = METER_WINDOW) {
+// Bin edges spaced logarithmically from the first non-DC bin, each band at least one bin wide.
+function stripEdges(n, size, sampleRate) {
+  const lo = DC_BINS;
+  const hi = Math.min(size / 2, Math.floor(STRIP_TOP_HZ * size / sampleRate));
+  const edges = [lo];
+  for (let k = 1; k <= n; k++) {
+    edges.push(Math.min(hi, Math.max(edges[k - 1] + 1, Math.round(lo * (hi / lo) ** (k / n)))));
+  }
+  return edges;
+}
+
+export function createMonitor(sampleRate, size = METER_WINDOW, nStrips = SHEAR_BANDS) {
   const spec = createSpectrum(size);
+  const edges = stripEdges(nStrips, size, sampleRate);
   const ringL = new Float64Array(size);
   const ringR = new Float64Array(size);
   const right = new Float64Array(size / 2 + 1);
@@ -36,6 +50,7 @@ export function createMonitor(sampleRate, size = METER_WINDOW) {
     s = {
       time: 0, rms: 0, peak: 0, peakAt: 0, bands: METER_BANDS.map(() => 0), flux: 0,
       onsets: 0, lastOnset: -Infinity, minGain: 1, gainAt: 0, clamped: 0, nonFinite: 0,
+      strips: new Array(nStrips).fill(0),
     };
   }
   reset();
@@ -69,6 +84,11 @@ export function createMonitor(sampleRate, size = METER_WINDOW) {
     bands.forEach((p, i) => {
       s.bands[i] = i === 0 ? follow(s.bands[i], p, dt, LOW_ATTACK, LOW_RELEASE) : follow(s.bands[i], p, dt, RMS_ATTACK, RMS_RELEASE);
     });
+    for (let i = 0; i < nStrips; i++) {
+      let p = 0;
+      for (let k = edges[i]; k < edges[i + 1]; k++) p += cur[k];
+      s.strips[i] = follow(s.strips[i], p, dt, RMS_ATTACK, RMS_RELEASE);
+    }
 
     s.flux = positiveFlux(prev, cur);
     if (s.flux > ONSET_FLOOR && s.time - s.lastOnset >= ONSET_REFRACTORY) {
@@ -80,7 +100,7 @@ export function createMonitor(sampleRate, size = METER_WINDOW) {
 
   /** Current values (reading does not change them). */
   function snapshot() {
-    return { ...s, bands: [...s.bands] };
+    return { ...s, bands: [...s.bands], strips: [...s.strips] };
   }
 
   return { push, snapshot, reset, sampleRate };

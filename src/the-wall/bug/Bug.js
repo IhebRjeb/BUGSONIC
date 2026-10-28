@@ -131,14 +131,15 @@ export class Bug {
     this.next[kind] = at * 1000 + SOUND_COOLDOWN;
     this.flashAt = Math.min(this.flashAt, heardMs);
     if (audio.started) sound(audio.time(at));
-    audio.mark(kind, this.x, this.y, heardMs / 1000, strength);
+    audio.mark(kind, this.x, this.y, heardMs / 1000, strength, audio.audible(kind));
     emit(this, kind, freq);
   }
 
   /**
    * Draw the bug (body + legs) onto a 2d context.
+   * @param {boolean} [still] — reduced motion: the flash does not expand
    */
-  draw(ctx) {
+  draw(ctx, still = false) {
     const color = ['#d6edff', '#f0e4c9', '#b7d4ec', '#dae0b3'][this.id % 4];
     ctx.save();
     ctx.strokeStyle = ctx.fillStyle = color;
@@ -163,9 +164,10 @@ export class Bug {
     ctx.ellipse(0, 0, 5 + this.flash * 3, 2.5 + this.flash, 0, 0, Math.PI * 2);
     ctx.fill();
     if (this.flash > .08) {
+      const grow = still ? 0.4 : 1 - this.flash;
       ctx.globalAlpha = this.flash * .6;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 12 + (1 - this.flash) * 21, 10 + (1 - this.flash) * 21, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, 12 + grow * 21, 10 + grow * 21, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();

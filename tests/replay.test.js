@@ -34,6 +34,7 @@ function run(shade, seed, fps, seconds = 20) {
     },
     time: audioTime,
     mark() {},
+    audible: () => false,
   };
   const emit = (bug, kind, freq) => events.push([clock.now(), bug.id, kind, bug.x, bug.y, freq]);
   const ptr = { d: 0, x: 0, y: 0 };

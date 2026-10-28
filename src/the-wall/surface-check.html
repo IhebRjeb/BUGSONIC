@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>BUGSONIC — surface response check</title>
+  <style>body{font:13px/1.6 ui-monospace,monospace;margin:24px}pre{white-space:pre-wrap}canvas{border:1px solid #999;margin:4px}</style>
+</head>
+<body>
+  <h1>Surface response check</h1>
+  <p>Dev-only page. Drives the real response, renderer and analysis on a canvas with a scripted excitation (no audio, no animation frames):
+  excite for 2 s, then silence for 3 s, at 10/20/40 updates per second.</p>
+  <pre id="result">running…</pre>
+  <canvas id="before" width="480" height="640"></canvas><canvas id="excited" width="480" height="640"></canvas>
+  <script type="module">
+    import { W, H, SHEAR_BANDS, MAX_SHEAR_PX } from './config.js';
+    import { createResponse } from './feedback/response.js';
+    import { renderLive } from './feedback/render.js';
+    import { paint } from './wall/generator.js';
+    import { features } from './wall/analysis.js';
+
+    const wall = Object.assign(document.createElement('canvas'), { width: W, height: H });
+    paint(wall.getContext('2d'));
+    const working = wall.getContext('2d').getImageData(0, 0, W, H).data;
+    const strips = Array.from({ length: SHEAR_BANDS }, (_, i) => 1 / (1 + i));
+
+    function run(hz) {
+      const live = Object.assign(document.createElement('canvas'), { width: W, height: H });
+      const ctx = live.getContext('2d', { willReadFrequently: true });
+      const r = createResponse();
+      let maxAbs = 0, excitedPixels = 0, offsets;
+      for (let k = 0; k < 5 * hz; k++) {
+        const t = k / hz;
+        const impulses = t < 2 && k % hz === 0 ? [{ y: 330, strength: 0.3 }] : [];
+        offsets = r.advance(1 / hz, t < 2 ? { depth: 0.9, strips, impulses } : null);
+        maxAbs = Math.max(maxAbs, ...offsets.map(Math.abs));
+        renderLive(ctx, wall, offsets);
+        if (Math.abs(t - 1.5) < 1e-9) {
+          const d = ctx.getImageData(0, 0, W, H).data;
+          for (let i = 0; i < d.length; i += 4) if (d[i] !== working[i]) excitedPixels++;
+          document.getElementById('excited').getContext('2d').drawImage(live, 0, 0);
+        }
+      }
+      const d = ctx.getImageData(0, 0, W, H).data;
+      let residual = 0;
+      for (let i = 0; i < d.length; i++) if (d[i] !== working[i]) residual++;
+      const score = features(ctx).summary;
+      return { hz, maxAbs, excitedPixels, residualPixelsAfterRecovery: residual, finalOffsets: [...offsets].every(o => o === 0), score };
+    }
+
+    document.getElementById('before').getContext('2d').drawImage(wall, 0, 0);
+    const before = features(wall.getContext('2d')).summary;
+    const runs = [10, 20, 40].map(run);
+    const pass = runs.every(r => r.maxAbs <= MAX_SHEAR_PX && r.excitedPixels > 0 && r.residualPixelsAfterRecovery === 0 && r.finalOffsets
+      && JSON.stringify(r.score) === JSON.stringify(before));
+    document.getElementById('result').textContent = JSON.stringify({ pass, runs: runs.map(({ score, ...r }) => r), scoreRestored: runs.every(r => JSON.stringify(r.score) === JSON.stringify(before)) }, null, 2);
+  </script>
+</body>
+</html>

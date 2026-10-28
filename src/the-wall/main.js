@@ -9,11 +9,11 @@ import { init as initArchive, newWall, getCurrent } from './wall/archive.js';
 import { mkCanvas } from './wall/Wall.js';
 import { measure } from './wall/analysis.js';
 import { init as initColony, restart as restartColony, getBugs } from './bug/colony.js';
-import { isStarted } from './audio/engine.js';
-import { play, click, cancelPending } from './audio/synth.js';
+import { isStarted, getLevel } from './audio/engine.js';
+import { play, click, cancelPending, isLayerOn } from './audio/synth.js';
 import { nextStep, audioTime, reset as resetGrid } from './audio/grid.js';
 import { init as initEmitter, emit, emitWall, emitState, isExternalActive } from './events/emitter.js';
-import { init as initLoop, frame } from './feedback/loop.js';
+import { init as initLoop, frame, resetResponse } from './feedback/loop.js';
 import * as clock from './sim/clock.js';
 import { addMark, cancelAfter, clearMarks } from './ui/marks.js';
 import { invalidate as invalidateInspect } from './ui/inspect.js';
@@ -59,6 +59,7 @@ function restart() {
   measure(liveCtx);
   restartColony(w.seed);
   clock.reset();
+  resetResponse();
   clearMarks();
   invalidateInspect();
 }
@@ -71,6 +72,7 @@ initArchive({
   liveCtx,
   onSelect: (wall) => {
     cancelScheduled();
+    resetResponse();
     invalidateInspect();
     dashboard.select(wall);
     emitWall(wall);
@@ -92,6 +94,7 @@ const audioAPI = {
   next: nextStep,
   time: audioTime,
   mark: addMark,
+  audible: (kind) => isStarted() && isLayerOn(kind) && getLevel() > 0,
 };
 
 // Feedback loop

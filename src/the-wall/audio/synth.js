@@ -54,6 +54,8 @@ export function setLayer(kind, on) {
   if (layer.bus) layer.bus.gain.setTargetAtTime(layer.on ? 1 : 0, getContext().currentTime, 0.02);
 }
 
+export function isLayerOn(kind) { return layers[kind].on; }
+
 function track(at, end, out) {
   const now = getContext().currentTime;
   pending = pending.filter(p => p.end > now);

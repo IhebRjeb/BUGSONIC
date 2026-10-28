@@ -63,13 +63,13 @@ export const OUTPUT_MAX     = 0.7;   // slider maximum; MASTER_GAIN is unity out
 export const TAKE_SECONDS   = 60;
 export const TAKE_TAIL      = 4;     // s recorded after the layers close
 
-// Audio — delay (tempo-synced, with filter in feedback)
-export const DELAY_TIME     = 0.37;  // seconds (overridden by tempo sync)
+// Audio — delay (fixed time, with filter in feedback)
+export const DELAY_TIME     = 0.37;  // seconds (tempo sync is not wired)
 export const DELAY_FEEDBACK = 0.35;
 export const DELAY_WET      = 0.30;
 export const DELAY_FILTER_FREQ = 2200;  // Hz — lowpass in feedback path
 
-// Audio — reverb (algorithmic via feedback delay network)
+// Audio — reverb (convolution with a generated, seeded impulse)
 export const REVERB_DECAY   = 2.5;   // seconds
 export const REVERB_WET     = 0.25;
 
@@ -97,11 +97,16 @@ export const NOTE_DECAY_MAX = 1.6;   // seconds
 export const CLICK_DURATION = 0.06;  // seconds
 export const CLICK_GAIN     = 0.22;
 
-// Feedback loop
-export const SHEAR_BANDS    = 32;
-export const MAX_SHEAR_PX   = 7;
-export const HEAL_ALPHA     = 0.05;
-export const MEASURE_EVERY  = 3;     // frames between full pixel reads
+// Feedback response: time-based, bounded, rebuilt from the working surface
+export const SHEAR_BANDS    = 32;    // horizontal strips, low frequencies at the top
+export const MAX_SHEAR_PX   = 7;     // bound on any strip's displacement
+export const RESPONSE_EVERY = 3;     // simulation steps between surface updates (20 Hz)
+export const RESPONSE_ATTACK  = 0.05; // s
+export const RESPONSE_RELEASE = 0.35; // s — recovery toward the working surface
+export const IMPULSE_PX     = 3;     // kick at the strip where an audible sound was read
+export const IMPULSE_DECAY  = 0.15;  // s
+export const DEPTH_FLOOR_DB = -60;   // output RMS mapped to response depth 0..1
+export const DEPTH_RANGE_DB = 48;    // -60 dBFS -> 0, -12 dBFS -> 1
 
 // Generator
 export const GEN_RECT_COUNT = 140;
