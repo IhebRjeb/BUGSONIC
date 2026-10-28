@@ -21,6 +21,7 @@ import { initPointer } from './input/pointer.js';
 import { initKeyboard } from './input/keyboard.js';
 import { initControls } from './ui/controls.js';
 import { createDashboard } from './ui/dashboard.js';
+import { initTake } from './ui/take.js';
 
 // --- DOM ---
 const $ = (id) => document.getElementById(id);
@@ -134,6 +135,16 @@ const actions = initControls({
 
 // Keyboard
 initKeyboard(actions);
+
+// Comparison takes
+initTake({
+  button: $('take'),
+  status: $('take-status'),
+  canvas: cv,
+  noteLayer: $('layer-note'),
+  crackLayer: $('layer-crack'),
+  restart,
+});
 
 // --- Start ---
 newWall();

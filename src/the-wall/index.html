@@ -58,6 +58,7 @@
         <div class="level-label"><label for="volume">OUTPUT LEVEL</label><output id="volume-value" for="volume">45%</output></div>
         <input id="volume" type="range" min="0" max="70" value="45">
         <div class="spectrum-wrap"><canvas id="spectrum" width="440" height="88" role="img" aria-label="Live audio frequency spectrum"></canvas><div class="micro spectrum-labels"><span>LOW</span><span>SPECTRUM</span><span>HIGH</span></div></div>
+        <p id="meter" class="micro meter-readout" aria-live="off">OUT — dBFS · PEAK — · LIMIT —</p>
         <fieldset class="compare">
           <legend class="spec">COMPARE · <span id="score-id">SCORE —</span></legend>
           <label class="check"><input id="layer-note" type="checkbox" checked> Edge notes <small>ring</small></label>
@@ -65,6 +66,8 @@
           <label class="check"><input id="feedback" type="checkbox" checked> Feedback <small>sound shakes the wall</small></label>
           <label class="check"><input id="inspect" type="checkbox"> Inspect <small>edges · cracks · pulse</small></label>
           <button id="restart" class="line-button">Restart this wall <span aria-hidden="true">R</span></button>
+          <button id="take" class="line-button">Record comparison take <span aria-hidden="true">60 + 4 s · WAV</span></button>
+          <p id="take-status" class="control-description" role="status">Feedback off, no scratches, tab visible. Effects start clean; the take downloads with its settings.</p>
           <p class="control-description">Turn feedback off and restart: the same wall replays the same encounters at the current output level.</p>
         </fieldset>
       </section>

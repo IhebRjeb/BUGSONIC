@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test",
+    "match-takes": "node tools/match-takes.js",
     "bridge": "node tools/bridge.js"
   },
   "devDependencies": {

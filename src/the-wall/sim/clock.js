@@ -16,15 +16,20 @@ let steps = 0;
 let acc = 0;
 let last = null;
 let source = null;
+let dropped = 0;    // times the clock fell behind and dropped time since reset
 
 export function reset() {
   steps = 0;
   acc = 0;
   last = null;
+  dropped = 0;
 }
 
 /** Simulation time in seconds. */
 export function now() { return steps / SIM_HZ; }
+
+/** How often time was dropped since reset (a replay is then no longer exact). */
+export function droppedCount() { return dropped; }
 
 /**
  * Accumulate elapsed time and return how many fixed steps to run this frame.
@@ -48,6 +53,7 @@ export function advance(frameMs) {
     // Too far behind (hidden tab, slow device): drop time rather than burst.
     n = SIM_MAX_STEPS;
     acc = 0;
+    dropped++;
     if (audio) anchor(clockNow - (steps + n) / SIM_HZ);
   } else {
     acc = Math.max(0, acc - n * STEP);

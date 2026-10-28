@@ -42,8 +42,26 @@ export const MASTER_GAIN    = 0.45;
 
 // Audio — measurement (float PCM; initial defaults, to be validated)
 export const METER_WINDOW   = 2048;  // samples per spectral frame (Blackman)
+export const METER_HOP      = 512;   // samples per output block sent from the audio thread
 export const METER_BANDS    = [[20, 200], [200, 2000], [2000, 12000]]; // Hz: low, mid, high
 export const DB_FLOOR       = -120;  // dBFS reported for silence
+export const RMS_ATTACK     = 0.03;  // s
+export const RMS_RELEASE    = 0.25;  // s
+export const LOW_ATTACK     = 0.1;   // s — low band moves slower than RMS
+export const LOW_RELEASE    = 0.4;   // s
+export const ONSET_FLOOR    = 0.01;  // positive spectral flux below this is not an onset
+export const ONSET_REFRACTORY = 0.06; // s between detected onsets
+
+// Audio — final output (after effects): gain, then sample-peak protection
+export const OUTPUT_CEILING = 0.8913; // −1 dBFS sample peak
+export const OUTPUT_LOOKAHEAD = 0.0015; // s — limiter delay, added to visual cue timing
+export const OUTPUT_RELEASE = 0.08;  // s
+export const OUTPUT_RAMP    = 0.03;  // s — de-click ramp for level changes, reaches exact zero
+export const OUTPUT_MAX     = 0.7;   // slider maximum; MASTER_GAIN is unity output gain
+
+// Comparison takes
+export const TAKE_SECONDS   = 60;
+export const TAKE_TAIL      = 4;     // s recorded after the layers close
 
 // Audio — delay (tempo-synced, with filter in feedback)
 export const DELAY_TIME     = 0.37;  // seconds (overridden by tempo sync)

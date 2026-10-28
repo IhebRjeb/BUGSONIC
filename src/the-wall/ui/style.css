@@ -73,6 +73,7 @@ h2{font:inherit;margin:0;color:var(--ink);font-weight:700}
 input[type=range]{width:100%;height:18px;margin:6px 0;accent-color:var(--ink);cursor:pointer}
 #spectrum{width:100%;height:44px;display:block;margin-top:8px}
 .spectrum-labels{display:flex;justify-content:space-between;color:var(--muted);margin-top:6px}
+.meter-readout{color:var(--muted);margin:6px 0 0;font-variant-numeric:tabular-nums}
 .compare{border:0;border-top:1px dashed var(--line);margin:18px 0 0;padding:14px 0 0;display:grid;gap:9px;min-width:0}
 .compare legend{padding:0 8px 0 0;margin:0}
 .compare .line-button{margin-top:4px}

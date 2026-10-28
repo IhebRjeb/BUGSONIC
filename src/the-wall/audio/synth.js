@@ -19,23 +19,31 @@ import {
   CLICK_DURATION, CLICK_GAIN,
 } from '../config.js';
 import { getContext, getMaster, getDelay } from './engine.js';
+import { mulberry32 } from '../sim/rng.js';
 
+const NOISE_SEED = 0x5EED0002;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 let noise = null;
+let offsets = mulberry32(NOISE_SEED);   // click read positions; restarts with the effects chain
 
 // Each layer has its own bus, so muting a layer also silences its delay send.
-const layers = { note: { on: true, bus: null }, crack: { on: true, bus: null } };
+// Buses follow the current drive node; a rebuilt effects chain gets new buses
+// and the old ones (with any voices still on them) are disconnected.
+const layers = { note: { on: true, bus: null, to: null }, crack: { on: true, bus: null, to: null } };
 let pending = [];   // { at, end, out } for voices not yet finished
 
 function layerBus(kind) {
   const layer = layers[kind];
-  if (!layer.bus) {
+  const master = getMaster();
+  if (layer.to !== master) {
+    layer.bus?.disconnect();
     const ac = getContext();
     layer.bus = ac.createGain();
     layer.bus.gain.value = layer.on ? 1 : 0;
-    layer.bus.connect(getMaster());
-    const delay = getDelay();
-    if (kind === 'note' && delay) layer.bus.connect(delay);
+    layer.bus.connect(master);
+    if (kind === 'note') layer.bus.connect(getDelay());
+    layer.to = master;
+    if (kind === 'crack') offsets = mulberry32(NOISE_SEED);
   }
   return layer.bus;
 }
@@ -130,7 +138,8 @@ function noiseBuffer(ac) {
   const len = Math.ceil(ac.sampleRate * CLICK_DURATION * 3);
   noise = ac.createBuffer(1, len, ac.sampleRate);
   const d = noise.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const rng = mulberry32(NOISE_SEED);
+  for (let i = 0; i < len; i++) d[i] = rng() * 2 - 1;
   return noise;
 }
 
@@ -165,11 +174,12 @@ export function click(time, depth, T, panPos) {
   const pan = ac.createStereoPanner();
   pan.pan.value = clamp(panPos, -1, 1);
 
+  const bus = layerBus('crack');
   src.connect(flt);
   flt.connect(gn);
   gn.connect(pan);
-  pan.connect(layerBus('crack'));
-  src.start(time, Math.random() * Math.max(0, src.buffer.duration - dur));
+  pan.connect(bus);
+  src.start(time, offsets() * Math.max(0, src.buffer.duration - dur));
   src.stop(time + dur + 0.02);
   track(time, time + dur + 0.02, pan);
 }

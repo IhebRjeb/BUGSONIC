@@ -11,7 +11,7 @@
 // no event — so sparse pulses produce silence instead of a late pile-up.
 // ---------------------------------------------------------------------------
 
-import { PULSE_LATENCY, PULSE_MAX_WAIT, PULSE_VOICES } from '../config.js';
+import { PULSE_LATENCY, PULSE_MAX_WAIT, PULSE_VOICES, OUTPUT_LOOKAHEAD } from '../config.js';
 
 let origin = 0;            // audio-clock time at simulation time 0
 const taken = new Map();   // step index -> sounds placed on it
@@ -41,7 +41,7 @@ export function nextStep(T, simT) {
 
 /** Current step index for display, aligned with what is audible. */
 export function stepAt(T, simT) {
-  return Math.floor((simT - PULSE_LATENCY) / (60 / T.tempo / 4));
+  return Math.floor((simT - PULSE_LATENCY - OUTPUT_LOOKAHEAD) / (60 / T.tempo / 4));
 }
 
 /** Audio-clock time (s) at which a step placed at simulation time `at` plays. */

@@ -54,6 +54,8 @@ export function setFeedback(on) {
   feedback = !!on;
 }
 
+export function isFeedback() { return feedback; }
+
 /**
  * Single frame tick — called by requestAnimationFrame.
  */

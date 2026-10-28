@@ -48,5 +48,6 @@ test('frame clock: fixed steps, and long gaps drop time instead of bursting', ()
   assert.equal(clock.advance(0), 0);
   assert.equal(clock.advance(1000 / 30), 2);
   assert.equal(clock.advance(1000 / 30 + 5000), SIM_MAX_STEPS);
+  assert.equal(clock.droppedCount(), 1);
   assert.equal(clock.advance(1000 / 30 + 5000 + 1000 / 60), 1);
 });

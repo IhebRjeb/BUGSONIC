@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>BUGSONIC — audio output check</title>
+  <style>body{font:13px/1.6 ui-monospace,monospace;margin:24px}pre{white-space:pre-wrap}</style>
+</head>
+<body>
+  <h1>Audio output check (offline render)</h1>
+  <p>Dev-only page. Renders the real graph at a given rate: <a href="?rate=44100">44.1 kHz</a> · <a href="?rate=48000">48 kHz</a>.
+  Dense resonant notes and clicks at maximum output level, then the level goes to zero while tails are still ringing.</p>
+  <pre id="result">running…</pre>
+  <script type="module">
+    import { OUTPUT_MAX, OUTPUT_CEILING, OUTPUT_RAMP, OUTPUT_LOOKAHEAD } from './config.js';
+    import { initAudio, setLevel, onBlock } from './audio/engine.js';
+    import { play, click } from './audio/synth.js';
+
+    const rate = Number(new URLSearchParams(location.search).get('rate')) || 48000;
+    const seconds = 5, muteAt = 3;
+    const ctx = new OfflineAudioContext(2, rate * seconds, rate);
+    const out = document.getElementById('result');
+    try {
+      await initAudio(ctx);
+      setLevel(OUTPUT_MAX);
+      const blocks = [];
+      onBlock((b) => blocks.push(b));
+
+      // Harshest voice the tuning can produce; far denser than the pulse allows (3 per 16th).
+      const T = { voice: { carriers: ['sawtooth', 'square'], ratios: [3.5, 5.04, 7.13], index: 1.6, decay: 1.5, cutoff: 9000, crackTone: 3400 } };
+      let voices = 0;
+      for (let t = 0.05; t < muteAt - 0.4; t += 0.02) {
+        for (let id = 0; id < 8; id++) {
+          if ((t * 50 + id) % 3 < 1) {
+            play({ id, x: (id + 0.5) * 60 }, 80 * 2 ** ((id * 7 + t * 13) % 30 / 10), { g: 0.3, l: 1, sat: 1 }, t, T);
+          } else {
+            click(t, 0.4, T, id / 4 - 1);
+          }
+          voices++;
+        }
+      }
+      ctx.suspend(muteAt).then(() => { setLevel(0); ctx.resume(); });
+      const buf = await ctx.startRendering();
+      await new Promise((r) => setTimeout(r, 200));
+
+      const L = buf.getChannelData(0), R = buf.getChannelData(1);
+      let peak = 0, nonFinite = 0, peakAt = 0;
+      for (let i = 0; i < L.length; i++) {
+        for (const v of [L[i], R[i]]) {
+          if (!Number.isFinite(v)) nonFinite++;
+          else if (Math.abs(v) > peak) { peak = Math.abs(v); peakAt = i / rate; }
+        }
+      }
+      const silentFrom = Math.ceil((muteAt + OUTPUT_RAMP + OUTPUT_LOOKAHEAD) * rate) + 128;
+      let nonZeroAfterMute = 0, tailBeforeMute = 0;
+      for (let i = silentFrom; i < L.length; i++) if (L[i] !== 0 || R[i] !== 0) nonZeroAfterMute++;
+      for (let i = Math.floor((muteAt - 0.1) * rate); i < muteAt * rate; i++) tailBeforeMute = Math.max(tailBeforeMute, Math.abs(L[i]));
+      const last = blocks.at(-1) ?? {};
+      const minGain = Math.min(...blocks.map(b => b.minGain));
+      const result = {
+        rate, voices, seconds,
+        peak, peakDbfs: 20 * Math.log10(peak), peakAt, ceiling: OUTPUT_CEILING,
+        withinCeiling: peak <= OUTPUT_CEILING + 1e-6,
+        nonFinite,
+        maxLimiterReductionDb: -20 * Math.log10(minGain),
+        clampEngaged: last.clamped ?? null,
+        tailStillRingingBeforeMute: tailBeforeMute,
+        nonZeroSamplesAfterMute: nonZeroAfterMute,
+        blocksReceived: blocks.length,
+      };
+      result.pass = result.withinCeiling && nonFinite === 0 && nonZeroAfterMute === 0 && tailBeforeMute > 0 && result.clampEngaged === 0;
+
+      // The compressor usually keeps the mix under the ceiling; drive the real worklet directly too.
+      const hot = new OfflineAudioContext(2, rate, rate);
+      await hot.audioWorklet.addModule(new URL('./audio/output.worklet.js', import.meta.url));
+      const node = new AudioWorkletNode(hot, 'bugsonic-output', {
+        outputChannelCount: [2],
+        processorOptions: { ceiling: OUTPUT_CEILING, lookahead: OUTPUT_LOOKAHEAD, release: 0.08, hop: 512 },
+      });
+      const hotBlocks = [];
+      node.port.onmessage = (e) => hotBlocks.push(e.data);
+      const osc = hot.createOscillator();
+      osc.frequency.value = 97;
+      const amp = hot.createGain();
+      amp.gain.value = 3;
+      osc.connect(amp).connect(node);
+      const imp = hot.createBuffer(1, rate, rate);
+      for (let i = 0; i < 50; i++) imp.getChannelData(0)[Math.floor(rate * (i + 0.5) / 50)] = 10;
+      const src = hot.createBufferSource();
+      src.buffer = imp;
+      src.connect(node);
+      node.connect(hot.destination);
+      osc.start(); src.start();
+      const hb = await hot.startRendering();
+      await new Promise((r) => setTimeout(r, 200));
+      let hotPeak = 0;
+      for (const ch of [hb.getChannelData(0), hb.getChannelData(1)]) for (const v of ch) hotPeak = Math.max(hotPeak, Math.abs(v));
+      result.hot = {
+        inputPeak: Math.max(...hotBlocks.map(b => b.inPeak)),
+        outputPeak: hotPeak,
+        maxReductionDb: -20 * Math.log10(Math.min(...hotBlocks.map(b => b.minGain))),
+        clamped: hotBlocks.at(-1)?.clamped ?? null,
+      };
+      result.pass &&= hotPeak <= OUTPUT_CEILING + 1e-6 && result.hot.clamped === 0 && result.hot.maxReductionDb > 10;
+      out.textContent = JSON.stringify(result, null, 2);
+    } catch (error) {
+      out.textContent = `FAILED: ${error.stack ?? error}`;
+    }
+  </script>
+</body>
+</html>

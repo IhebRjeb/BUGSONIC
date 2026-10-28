@@ -5,7 +5,7 @@
 // and triggers sounds based on what it finds.
 // ---------------------------------------------------------------------------
 
-import { W, H, LEGS_PER_BUG, SOUND_COOLDOWN, EDGE_GRAD, EDGE_RELEASE, RIDGE_DEPTH, PULSE_LATENCY } from '../config.js';
+import { W, H, LEGS_PER_BUG, SOUND_COOLDOWN, EDGE_GRAD, EDGE_RELEASE, RIDGE_DEPTH, PULSE_LATENCY, OUTPUT_LOOKAHEAD } from '../config.js';
 import { grad, lumAt, ridgeAt, colourAt } from '../wall/analysis.js';
 import { noteFreq } from '../wall/tuning.js';
 
@@ -127,7 +127,7 @@ export class Bug {
   trigger(t, audio, T, emit, kind, freq, strength, sound) {
     const at = audio.next(T, t / 1000);
     if (at === null) return;
-    const heardMs = (at + PULSE_LATENCY) * 1000;
+    const heardMs = (at + PULSE_LATENCY + OUTPUT_LOOKAHEAD) * 1000;
     this.next[kind] = at * 1000 + SOUND_COOLDOWN;
     this.flashAt = Math.min(this.flashAt, heardMs);
     if (audio.started) sound(audio.time(at));

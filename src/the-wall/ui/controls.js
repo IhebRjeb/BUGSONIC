@@ -32,7 +32,7 @@ export function initControls(els, restart) {
     try {
       await toggleAudio();
     } catch {
-      uploadStatus.textContent = 'Audio could not start. Try waking the wall again.';
+      uploadStatus.textContent = 'Browser sound could not start (it needs AudioWorklet for output protection). External out still works.';
     } finally {
       go.disabled = false;
     }
