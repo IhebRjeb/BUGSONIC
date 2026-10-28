@@ -5,7 +5,8 @@
 // events, input, and UI controls.
 // ---------------------------------------------------------------------------
 
-import { init as initArchive, newWall, getCurrent } from './wall/archive.js';
+import { init as initArchive, newWall, getCurrent, select } from './wall/archive.js';
+import { loadCollection } from './wall/collection.js';
 import { mkCanvas } from './wall/Wall.js';
 import { measure } from './wall/analysis.js';
 import { init as initColony, restart as restartColony, getBugs } from './bug/colony.js';
@@ -149,7 +150,15 @@ initTake({
   restart,
 });
 
-// --- Start ---
-newWall();
-restart();
-requestAnimationFrame(frame);
+// --- Start: the walls/ collection, or a generated wall if it is empty ---
+loadCollection().then(({ walls, failed }) => {
+  if (walls.length) {
+    select(walls[0]);
+    $('upload-status').textContent = `${walls.length} wall${walls.length > 1 ? 's' : ''} from the collection` +
+      (failed.length ? `; could not read ${failed.join(', ')}` : '') + '. Keys 1–9 switch walls.';
+  } else {
+    newWall();
+  }
+  restart();
+  requestAnimationFrame(frame);
+});

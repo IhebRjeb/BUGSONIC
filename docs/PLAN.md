@@ -165,6 +165,7 @@ Acceptance: compare with the layer muted at matched overall level. Retain it onl
 
 Run relevant regressions throughout the earlier slices. Persistence and release can proceed without the optional bytebeat pilot.
 
+- [x] Load the repository's `walls/` photos at start (Vite-bundled, ordered and credited by `walls/index.json`), through the same cover-crop as uploads.
 - [ ] Preserve uploaded walls and score settings in IndexedDB; expose image fit/crop choices before analysis so the scored image is the visible image.
 - [ ] Profile live pixel reads, shear and drawing before adding workers or increasing analysis frequency. Record frame-time percentiles on a named desktop/mobile test set; choose a budget and verify adaptive quality does not alter the score.
 - [x] Regression-test protocol v1 and OSC (`tests/protocol.test.js`, including a spawned bridge). `energy` keeps its 0–1 range but now uses the fixed RMS transfer instead of a byte-FFT mean. External-only mode does not measure sound from an external instrument.
@@ -176,7 +177,7 @@ Run relevant regressions throughout the earlier slices. Persistence and release 
 - A deterministic event sequence (feedback off, no scratches) is not a deterministic waveform. Subjective listening quality remains to be established.
 - Browser sound now requires AudioWorklet (secure context or localhost). The dev check pages are served by `npm run dev` only, not built.
 - Takes need a visible tab and running audio for 64 s; a paused context stalls the take. JPEG decoding differences still change seeds across browsers.
-- Archive contents disappear on reload. Uploads cover-crop to 480x640. The inspection overlay takes roughly 100+ ms to build (on toggle, wall change, restart or scratch).
+- Archive contents added during a session (uploads, generated walls) disappear on reload; the `walls/` collection reloads at start. Uploads cover-crop to 480x640. The inspection overlay takes roughly 100+ ms to build (on toggle, wall change, restart or scratch).
 - The local bridge remains a separate process; Vercel does not host it.
 - Defer granular/sample engines, Strudel, MIDI, community uploads, environmental inputs, new bug species and multi-wall migration until the core image/sound/visual relationship passes the comparison checks.
 
@@ -199,7 +200,7 @@ Do not silently expand a slice into the next. Fix baseline blockers when needed 
 
 1. `npm install`, `npm test` (62 pass, Node 24), `npm run dev`. With the dev server running, open `/audio-check.html?rate=44100`, `?rate=48000` and `/surface-check.html`; each must report `"pass": true`.
 2. In a visible tab: check reduced motion (OS setting or devtools emulation) and the feedback response by eye; play densely, then suspend/resume and switch walls while watching `OUT / PEAK / LIMIT`.
-3. **M1 listening pass.** Upload the three JPEGs from [walls/index.json](../walls/index.json) through **Bring your own**. Four bugs, feedback off, no scratches, tab visible. Wake the wall, then **Record comparison take** for each wall (repeat one wall once to expose capture variation). Put the WAV/JSON pairs in a folder and run `npm run match-takes -- <folder>`. Run the blind pairwise trials on `matched/*.wav` without opening `key.json`, then the image-visible pass. Record results in this plan, including Earth vs Ibn El Jazzar.
+3. **M1 listening pass.** The three JPEGs from [walls/index.json](../walls/index.json) load at start as W-001–W-003 (browser check 2026-10-28: Chromium scores match the table above, seeds 22556257 / efad60b7 / 5f0b6506). Four bugs, feedback off, no scratches, tab visible. Wake the wall, then **Record comparison take** for each wall (repeat one wall once to expose capture variation). Put the WAV/JSON pairs in a folder and run `npm run match-takes -- <folder>`. Run the blind pairwise trials on `matched/*.wav` without opening `key.json`, then the image-visible pass. Record results in this plan, including Earth vs Ibn El Jazzar.
 4. Repeat the pass with feedback on, then start M3 from specific findings only.
 
 Production deployment verification, a real TouchDesigner/Hydra patch and photo-specific reuse licensing remain unresolved; no licence change is made here.

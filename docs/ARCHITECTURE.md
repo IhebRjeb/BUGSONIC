@@ -47,7 +47,8 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 |---|---|---|
 | **config** | `config.js` | All constants: canvas size, thresholds, audio params |
 | **Wall** | `wall/Wall.js` | Wall class: canvas, thumbnail, features, tuning |
-| **archive** | `wall/archive.js` | Collection management: add, select, switch |
+| **archive** | `wall/archive.js` | Collection management: add, select, switch; image loading and cover-crop |
+| **collection** | `wall/collection.js` | Loads the repository's `walls/` photos at start, ordered and credited by `walls/index.json` |
 | **analysis** | `wall/analysis.js` | Pixel reads: luminance, gradient, ridges (cracks), local colour, spatial image score |
 | **tuning** | `wall/tuning.js` | Image score to music: EDO, scale, root, tempo, pulse, wall voice |
 | **generator** | `wall/generator.js` | Procedural wall texture generation |
@@ -80,7 +81,7 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 
 ## Data flow
 
-1. A wall is selected (generated or uploaded photo). Sounds still waiting on the pulse are cancelled.
+1. At start, the `walls/` photos are added to the archive (a generated wall if the folder is empty) and the first is selected. A wall is selected (collection, generated or uploaded photo). Sounds still waiting on the pulse are cancelled.
 2. `analysis.js` reads all pixels and computes the spatial image score plus a pixel-hash seed.
 3. `tuning.js` maps the score to EDO, scale, root, tempo, pulse and wall voice.
 4. Each frame, `loop.js` runs:

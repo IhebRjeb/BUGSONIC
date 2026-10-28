@@ -20,7 +20,7 @@ Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `
 ## Use it
 
 1. **Wake the wall** to start browser sound (requires a tap — browser policy).
-2. **Bring your own** to load a wall image. Keys `1`-`9` switch walls.
+2. The photos in [walls/](walls/README.md) load at start; keys `1`-`9` switch walls. **Bring your own** adds another image for the session.
 3. **Drag** on the wall to scratch a crack. Bugs steer toward your pointer and click on cracks.
 4. **Introduce a creature** / key `b` adds a bug (max 8). `n` generates a new wall. `space` toggles sound.
 5. **Record comparison take** saves 60 s + 4 s of the current wall (clean effects, seeded restart) as a float WAV with a JSON record. `npm run match-takes -- <folder>` RMS-matches and anonymizes takes for blind listening.
@@ -101,7 +101,7 @@ walls/                wall photos (see walls/README.md)
 
 ## Docs
 
-Current status (2026-10-28): image-identity comparison tools, measured and protected output, comparison takes and a bounded, time-based feedback response are implemented and tested. **No listening session has taken place yet.** Next: the blind, level-matched listening pass on the three photos, then with feedback on, then voice calibration from the findings. See [the creative strategy](docs/CREATIVE_STRATEGY.md), [Resume next session](docs/PLAN.md#resume-next-session) and [the photo set](walls/README.md). The photos are not automatically loaded into the app.
+Current status (2026-10-28): image-identity comparison tools, measured and protected output, comparison takes and a bounded, time-based feedback response are implemented and tested. **No listening session has taken place yet.** Next: the blind, level-matched listening pass on the three photos, then with feedback on, then voice calibration from the findings. See [the creative strategy](docs/CREATIVE_STRATEGY.md), [Resume next session](docs/PLAN.md#resume-next-session) and [the photo set](walls/README.md), which loads automatically.
 
 - [Artistic vision](docs/VISION.md)
 - [Creative and technical strategy](docs/CREATIVE_STRATEGY.md)
