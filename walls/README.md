@@ -16,6 +16,6 @@ The three 768x1024 JPEGs are credited in [index.json](index.json). Iheb Rjeb con
 
 These are mixed real scenes, not isolated smooth/repeated/fractured test patterns. Keep synthetic fixtures for exact assertions.
 
-Load them using **Bring your own** after starting the app. This folder is not an automatically loaded gallery; the archive lasts only for the current session. The app cover-crops uploads to 480x640. Keep the tab visible, disable Feedback, use four bugs and restart without scratching for repeatable event comparisons.
+Load them using **Bring your own** after starting the app. This folder is not an automatically loaded gallery; the archive lasts only for the current session. The app cover-crops uploads to 480x640. For comparisons, keep the tab visible, disable Feedback, use four bugs and use **Record comparison take**; then `npm run match-takes -- <folder>`.
 
-See [the plan](../docs/PLAN.md) for measured observations and outstanding listening acceptance. Identical output-slider settings do not establish matched loudness. No separate photo license is granted by this metadata.
+See [the plan](../docs/PLAN.md) for measured observations and outstanding listening acceptance. Identical output-slider settings do not establish matched loudness; the take tool matches RMS offline. No separate photo license is granted by this metadata.

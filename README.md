@@ -13,9 +13,9 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `ws` is a dev dependency used only by the local bridge.
+Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `ws` is a dev dependency used only by the local bridge. Browser sound needs AudioWorklet (localhost or HTTPS).
 
-`npm test` runs the regression suite (Node 20+ built-in runner): synthetic walls, score/seed determinism, pulse scheduling, frame-rate-independent replay and audio measurements.
+`npm test` runs the regression suite (Node 20+ built-in runner): synthetic walls, score/seed determinism, pulse scheduling, frame-rate-independent replay, measurement, output limiter, audio routing, feedback response, protocol/OSC/bridge and takes. With `npm run dev` running, `/audio-check.html?rate=48000` (or `44100`) and `/surface-check.html` check real Web Audio and Canvas behaviour; each reports `"pass": true`.
 
 ## Use it
 
@@ -23,6 +23,7 @@ Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `
 2. **Bring your own** to load a wall image. Keys `1`-`9` switch walls.
 3. **Drag** on the wall to scratch a crack. Bugs steer toward your pointer and click on cracks.
 4. **Introduce a creature** / key `b` adds a bug (max 8). `n` generates a new wall. `space` toggles sound.
+5. **Record comparison take** saves 60 s + 4 s of the current wall (clean effects, seeded restart) as a float WAV with a JSON record. `npm run match-takes -- <folder>` RMS-matches and anonymizes takes for blind listening.
 
 ## External out
 
@@ -53,17 +54,17 @@ Full message and OSC reference: [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md).
 ## How it works
 
 ```
-wall photo -> image analysis -> tuning system -> bug sampling -> FM synthesis -> FFT -> shear the wall -> bugs read the changed wall -> ...
+wall photo -> image analysis -> tuning system -> bug sampling -> FM synthesis -> protected, measured output -> strips of the wall move -> bugs read the changed wall -> ...
 ```
 
 | Layer | What it does |
 |---|---|
 | **Wall** | Each wall is analysed for edge density, crack density, brightness, hue, orientation |
 | **Tuning** | Each image gets its own score. Edge density + texture set steps per octave (5-23 EDO). The image's luminance distribution picks the scale (its most common tone is the tonic). Edge energy across the image, left to right, sets a 16-step pulse. Brightness sets the root; edges + contrast set the tempo |
-| **Bugs** | 4-8 autonomous agents with six legs. Entering an edge = FM note; crossing a thin dark line (darker than both sides) = filtered noise click; shadows and flat paint stay silent. Stereo panning from position; sounds land on the wall's pulse, and a ring (note) or cross (click) marks where each sound was read |
-| **Compare** | Restart (`R`) replays a wall from a seed derived from its pixels. With feedback off, the same wall repeats the same encounters. Mute edge notes or crack clicks, and Inspect shows edges, cracks and the pulse columns |
-| **Audio** | FM synthesis (2-operator). The wall sets the voice (carriers, FM ratios, brightness, decay) from texture, repetition, contrast and colour; the pixels under the bug shape each note. Effects chain: distortion, chorus, fixed 370 ms delay, convolution reverb with a generated impulse, master compressor |
-| **Feedback** | FFT energy speeds bugs up, bass pulls them down, the spectrum shears the live wall horizontally, wall slowly heals toward the original |
+| **Bugs** | 4-8 autonomous agents with six legs. Entering an edge = FM note; crossing a thin dark line (darker than both sides) = filtered noise click; shadows and flat paint stay silent. Stereo panning from position; sounds land on the wall's pulse, and a ring (note) or cross (click) marks where each sound was read — dashed when the browser does not play it |
+| **Compare** | Restart (`R`) replays a wall from a seed derived from its pixels. With feedback off, the same wall repeats the same encounters. Mute edge notes or crack clicks, Inspect shows edges, cracks and the pulse columns, and comparison takes record isolated WAVs |
+| **Audio** | FM synthesis (2-operator). The wall sets the voice (carriers, FM ratios, brightness, decay) from texture, repetition, contrast and colour; the pixels under the bug shape each note. Effects chain: distortion, chorus, fixed 370 ms delay, convolution reverb with a seeded impulse, compressor. Then the output stage: level after the effects (zero silences tails too), lookahead sample-peak limiter at −1 dBFS, continuous measurement (`OUT / PEAK / LIMIT`) |
+| **Feedback** | Output loudness sets how far horizontal strips of the wall move, the spectrum picks which ones, and each audible encounter nudges the strip where it was read. Bounded to 7 px, back to rest when the sound stops, rebuilt from the wall each time so nothing smears. Loudness speeds the bugs, bass pulls them down. Reduced motion keeps the wall still |
 | **Events** | Every encounter emits a protocol-v1 message (`event`, `wall`, `state`) over WebSocket, forwarded to OSC by the bridge — see [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md) |
 
 ## Repo layout
@@ -75,14 +76,18 @@ src/the-wall/
   config.js           all constants and thresholds
   wall/               image analysis, tuning, wall generation, archive
   bug/                Bug class, colony management
-  audio/              engine, FM synthesis, effects chain, rhythm grid
+  audio/              engine, output worklet (level + limiter), monitor, meter, FM synthesis, effects, rhythm grid, WAV
   sim/                fixed-step simulation clock, seeded randomness
-  feedback/           animation loop, spectrum shearing
+  feedback/           animation loop, bounded response, live-wall rendering
   events/             protocol v1 messages, resilient WebSocket link
   input/              pointer and keyboard handlers
-  ui/                 controls, dashboard/telemetry, sound marks, inspection overlay, stylesheet
+  ui/                 controls, dashboard/telemetry, marks, inspection overlay, takes, reduced motion, stylesheet
+  audio-check.html    dev-only offline render check (output protection)
+  surface-check.html  dev-only canvas check (bounded response, recovery)
 tools/
   bridge.js           WebSocket hub + OSC/UDP forwarder (npm run bridge)
+  osc.js              protocol validation and OSC encoding
+  match-takes.js      RMS-match and anonymize comparison takes (npm run match-takes)
 tests/                regression suite and synthetic wall fixtures (npm test)
 docs/
   VISION.md           artistic vision
@@ -96,7 +101,7 @@ walls/                wall photos (see walls/README.md)
 
 ## Docs
 
-Current status (2026-10-28): milestone 1 comparison controls and three real-photo fixtures are implemented, with replay/score/pulse regressions in `tests/`; level-controlled blind listening remains open. Milestone 2 has tested measurement functions, not yet wired into the audio. Next: live measurement integration and complete output control, then listen before redesigning feedback or tuning voices. See [the creative strategy](docs/CREATIVE_STRATEGY.md), [Resume next session](docs/PLAN.md#resume-next-session) and [the photo set](walls/README.md). The photos are not automatically loaded into the app.
+Current status (2026-10-28): image-identity comparison tools, measured and protected output, comparison takes and a bounded, time-based feedback response are implemented and tested. **No listening session has taken place yet.** Next: the blind, level-matched listening pass on the three photos, then with feedback on, then voice calibration from the findings. See [the creative strategy](docs/CREATIVE_STRATEGY.md), [Resume next session](docs/PLAN.md#resume-next-session) and [the photo set](walls/README.md). The photos are not automatically loaded into the app.
 
 - [Artistic vision](docs/VISION.md)
 - [Creative and technical strategy](docs/CREATIVE_STRATEGY.md)

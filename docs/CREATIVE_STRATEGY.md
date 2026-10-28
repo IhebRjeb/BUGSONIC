@@ -62,7 +62,7 @@ Separate measurements with physical digital-audio units from normalized artistic
 | Low / mid / high band power | Slow pull, material response, spectral balance | Initial boundaries: 20–200 Hz, 200–2000 Hz, 2000 Hz–min(12000 Hz, Nyquist). Treat these as design defaults, not musical pulse divisions |
 | Positive spectral change | Candidate onset/attack strength | Fixed analysis window and hop, noise floor, normalization and refractory interval; reset on suspension/restart to avoid false attacks |
 
-For spectral processing, convert float dB magnitudes to linear power before aggregation. Define FFT window normalization and bin overlap at band boundaries; do not sum byte bins and call it energy. Start spectral experiments with a 2048-sample Blackman window and a 256-sample hop (about 43–46 ms windows, 5–6 ms hops at the test rates). Normalize using the actual window coefficients. This is a resolution/latency/CPU tradeoff to validate, not a proven optimum or permission to change the score.
+For spectral processing, convert float dB magnitudes to linear power before aggregation. Define FFT window normalization and bin overlap at band boundaries; do not sum byte bins and call it energy. Start spectral experiments with a 2048-sample Blackman window. The implementation analyses every 512-sample output block (about 11 ms); a shorter hop can be revisited if onset timing needs it. Normalize using the actual window coefficients. This is a resolution/latency/CPU tradeoff to validate, not a proven optimum or permission to change the score.
 
 Use explicit attack/release times in seconds. A time-based exponential envelope uses `alpha = 1 - exp(-dt / tau)`. Initial artistic envelopes may try fast RMS attack (~30 ms), slower release (~250 ms) and a slower low-band response (~400 ms); choose final values from measured responses and listening.
 
@@ -148,7 +148,7 @@ Equal output-slider positions do not match loudness across walls. Listening leve
 
 Log pairwise confusion, especially Earth versus Ibn El Jazzar. Do not invent a universal pass percentage after seeing the answers or treat a small informal panel as statistical proof. Set trial count and decision rule before a formal claim. For creative iteration, each retained change needs a documented observation it improves; if only activity density identifies a wall, record that limitation and test isolated layers before adding complexity.
 
-The first listening pass happens **after measurements/output control but before redesigned feedback**, so feedback cannot hide weak image identity. A second comparison with feedback on checks whether the loop enriches rather than replaces that identity.
+The first listening pass runs **with feedback off**, so feedback cannot hide weak image identity. A second comparison with feedback on checks whether the loop enriches rather than replaces that identity. (The bounded response was built before the first pass; it does not affect feedback-off takes.)
 
 ## 6. Implementation discipline
 
