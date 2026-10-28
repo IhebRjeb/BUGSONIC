@@ -15,6 +15,8 @@ npm run dev
 
 Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `ws` is a dev dependency used only by the local bridge.
 
+`npm test` runs the regression suite (Node 20+ built-in runner): synthetic walls, score/seed determinism, pulse scheduling, frame-rate-independent replay and audio measurements.
+
 ## Use it
 
 1. **Wake the wall** to start browser sound (requires a tap — browser policy).
@@ -60,7 +62,7 @@ wall photo -> image analysis -> tuning system -> bug sampling -> FM synthesis ->
 | **Tuning** | Each image gets its own score. Edge density + texture set steps per octave (5-23 EDO). The image's luminance distribution picks the scale (its most common tone is the tonic). Edge energy across the image, left to right, sets a 16-step pulse. Brightness sets the root; edges + contrast set the tempo |
 | **Bugs** | 4-8 autonomous agents with six legs. Entering an edge = FM note; crossing a thin dark line (darker than both sides) = filtered noise click; shadows and flat paint stay silent. Stereo panning from position; sounds land on the wall's pulse, and a ring (note) or cross (click) marks where each sound was read |
 | **Compare** | Restart (`R`) replays a wall from a seed derived from its pixels. With feedback off, the same wall repeats the same encounters. Mute edge notes or crack clicks, and Inspect shows edges, cracks and the pulse columns |
-| **Audio** | FM synthesis (2-operator). The wall sets the voice (carriers, FM ratios, brightness, decay) from texture, repetition, contrast and colour; the pixels under the bug shape each note. Effects chain: distortion, chorus, tempo-synced delay, algorithmic reverb, master compressor |
+| **Audio** | FM synthesis (2-operator). The wall sets the voice (carriers, FM ratios, brightness, decay) from texture, repetition, contrast and colour; the pixels under the bug shape each note. Effects chain: distortion, chorus, fixed 370 ms delay, convolution reverb with a generated impulse, master compressor |
 | **Feedback** | FFT energy speeds bugs up, bass pulls them down, the spectrum shears the live wall horizontally, wall slowly heals toward the original |
 | **Events** | Every encounter emits a protocol-v1 message (`event`, `wall`, `state`) over WebSocket, forwarded to OSC by the bridge — see [docs/EVENT_SPEC.md](docs/EVENT_SPEC.md) |
 
@@ -81,20 +83,23 @@ src/the-wall/
   ui/                 controls, dashboard/telemetry, sound marks, inspection overlay, stylesheet
 tools/
   bridge.js           WebSocket hub + OSC/UDP forwarder (npm run bridge)
+tests/                regression suite and synthetic wall fixtures (npm test)
 docs/
   VISION.md           artistic vision
   ARCHITECTURE.md     system architecture
   SOUND_DESIGN.md     synthesis and effects reference
   EVENT_SPEC.md       event format specification
+  CREATIVE_STRATEGY.md design rationale, material vocabulary and validation method
   PLAN.md             roadmap and status
 walls/                wall photos (see walls/README.md)
 ```
 
 ## Docs
 
-Current status: milestone 1 comparison controls and three real-photo fixtures are implemented; matched-level blind listening remains open. Milestone 2 audio measurement and output-safety work has not started. See [Resume next session](docs/PLAN.md#resume-next-session) for the handoff and [the photo set](walls/README.md) for loading instructions. The photos are not automatically loaded into the app.
+Current status (2026-10-28): milestone 1 comparison controls and three real-photo fixtures are implemented, with replay/score/pulse regressions in `tests/`; level-controlled blind listening remains open. Milestone 2 has tested measurement functions, not yet wired into the audio. Next: live measurement integration and complete output control, then listen before redesigning feedback or tuning voices. See [the creative strategy](docs/CREATIVE_STRATEGY.md), [Resume next session](docs/PLAN.md#resume-next-session) and [the photo set](walls/README.md). The photos are not automatically loaded into the app.
 
 - [Artistic vision](docs/VISION.md)
+- [Creative and technical strategy](docs/CREATIVE_STRATEGY.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Sound design](docs/SOUND_DESIGN.md)
 - [Event format](docs/EVENT_SPEC.md)

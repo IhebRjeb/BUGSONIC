@@ -71,6 +71,7 @@ When a bug enters an edge (gradient > 0.06), it triggers a 2-operator FM voice. 
 
 A crack is a thin line darker than both of its sides (by 0.1 luminance, measured 5 px away). A shadow edge is dark on one side only, so it does not click.
 
+- The crack detector re-arms when depth falls below 0.05 (half the entry threshold).
 - Shared noise buffer, read from a random offset
 - Bandpass sweep down from a centre set by wall brightness; deeper cracks start lower
 - Deeper cracks are longer and louder
@@ -78,7 +79,7 @@ A crack is a thin line darker than both of its sides (by 0.1 luminance, measured
 
 ### Rhythm
 
-The image is read left to right as one bar of 16 sixteenth notes. A step is active where that column of the image holds at least average edge energy. An encounter takes the first active step within the next beat (4 steps) that holds fewer than 3 sounds. If there is none, it rests: no sound, no event. Sparse pulses therefore produce silence rather than a late pile-up. Steps are chosen in simulation time, then scheduled 60 ms ahead on the audio clock. The bug's flash and its mark fire when the sound plays. Notes and clicks each have a 170 ms cooldown per bug. Changing walls cancels sounds that have not started.
+The image is read left to right as one bar of 16 sixteenth notes. A step is active where that column of the image holds at least average edge energy. An encounter takes the first active step that holds fewer than 3 sounds among the next step and the 4 after it (a wait under 1.25 beats). If there is none, it rests: no sound, no event. Sparse pulses therefore produce silence rather than a late pile-up. Steps are chosen in simulation time, then scheduled 60 ms ahead on the audio clock. The bug's flash and its mark fire when the sound plays. Notes and clicks each have a 170 ms cooldown per bug. Changing walls cancels sounds that have not started.
 
 Notes and clicks run through separate layer buses; muting a layer stops new input from that layer, including its delay send. The output level scales both the dry signal and the delay send upstream of the effects. Existing delay/reverb tails can remain after either control is muted; final-output mute and peak protection still need the milestone 2 audit.
 
@@ -86,10 +87,10 @@ Notes and clicks run through separate layer buses; muting a layer stops new inpu
 
 | Effect | Purpose | Key parameters |
 |---|---|---|
-| **Distortion** | Warmth and edge, driven by wall density | Waveshaper curve (amount 0.3), 15% wet, 2x oversampling |
-| **Chorus** | Stereo width and movement | 0.8 Hz LFO, 3ms depth, two detuned delay lines, 20% wet |
-| **Delay** | Rhythmic echoes | 370ms (can be tempo-synced), 35% feedback, lowpass at 2200 Hz in feedback path (darkening repeats), 30% wet |
-| **Reverb** | Spatial depth | Algorithmic impulse response (2.5s decay), 20ms pre-delay for clarity, 25% wet |
+| **Distortion** | Shared fixed warmth and edge; no wall-density control is wired | Waveshaper curve (amount 0.3), 15% wet, 2x oversampling |
+| **Chorus** | Modulated doubling; no explicit left/right separation of delay lines | 0.8 Hz shared LFO, 3ms base delay and a second line at 3.3ms, 20% wet |
+| **Delay** | Echoes from the note-layer send | Fixed 370ms (tempo sync is not wired), 35% feedback, lowpass at 2200 Hz in feedback path (darkening repeats), 30% wet |
+| **Reverb** | Spatial depth | Convolution with a generated random 2s impulse, decay exponent 2.5; 20ms pre-delay, 25% wet |
 | **Compressor** | Dynamic-range control, not a guaranteed peak limiter | -18 dB threshold, 12 dB knee, 4:1 ratio, 3ms attack, 150ms release |
 
 ## Tuning system
@@ -112,6 +113,6 @@ These descriptions express the intended character of the mappings, not validated
 
 ## Development priorities
 
-See [the roadmap](PLAN.md) for staged acceptance checks. The comparison tools now exist (seeded restart, feedback switch, layer mutes, sound-source marks, inspection overlay); the remaining part of that milestone is a matched-level listening comparison on real photos. Next, replace FFT energy proxies with RMS, Hz-defined bands and transient measurements, audit output safety, and couple those measurements to bounded visual responses. Calibrate the existing FM and crack voices before evaluating an optional image-derived bytebeat layer.
+See [the roadmap](PLAN.md) for implementation gates and [the strategy](CREATIVE_STRATEGY.md) for design contracts and listening method. Preserve baseline regression tests first, then replace FFT proxies with calibrated measurements and establish complete output control/capture. Perform the first level-controlled listening comparison before redesigning feedback; follow with bounded visual response and evidence-led FM/crack calibration. Bytebeat remains optional. These are planned changes, not implemented capabilities.
 
 The three [photo fixtures](../walls/README.md) have different measured scores and headless event sequences, but perceptual distinctiveness is not established. All currently select the middle FM carrier/ratio family. Shared output settings are not loudness matching, and decoder/resizing differences can change pixel seeds and scale degrees. Use the same browser and decoded image for repeatability checks; see [the session handoff](PLAN.md#resume-next-session) before changing mappings.

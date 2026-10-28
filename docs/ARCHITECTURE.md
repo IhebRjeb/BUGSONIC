@@ -53,6 +53,7 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 | **engine** | `audio/engine.js` | AudioContext, output level (dry and delay send), FFT reads |
 | **synth** | `audio/synth.js` | FM voices and noise clicks on per-layer mute buses; cancels voices not yet started |
 | **effects** | `audio/effects.js` | Distortion, chorus, delay, reverb, compressor |
+| **meter** | `audio/meter.js` | Pure float-PCM RMS/peak, envelopes, Hz bands, spectral flux (tested; not yet wired into the audio graph) |
 | **grid** | `audio/grid.js` | Places sounds on the wall's 16-step pulse (wait limit, per-step cap) and maps them to the audio clock |
 | **clock** | `sim/clock.js` | Fixed 60 Hz simulation steps, following the audio clock while sound runs |
 | **rng** | `sim/rng.js` | Seeded random streams, one per bug |
@@ -77,7 +78,7 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
    - Re-measures luminance every 3 frames.
    - Runs the fixed simulation steps that `clock.js` says are due. In each, every bug moves and reads luminance, gradient and ridge depth at its position. With feedback off, FFT energy does not affect the bugs.
    - Draws the wall, the optional inspection overlay, sound-source marks and the bugs.
-5. When a bug enters an edge or crosses a crack, `grid.js` picks the next active pulse step within one beat that still has room. If there is none the encounter rests. Otherwise:
+5. When a bug enters an edge or crosses a crack, `grid.js` picks the first active pulse step with room among the next step and the four after it (under 1.25 beats). If there is none the encounter rests. Otherwise:
    - `synth.js` schedules the voice at that step on the audio clock, through its layer bus.
    - A mark and the bug's flash appear when the sound is heard.
    - `emitter.js` creates a JSON event and optionally sends it via WebSocket.

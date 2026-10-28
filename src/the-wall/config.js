@@ -40,6 +40,11 @@ export const TEMPO_MAX      = 140;   // BPM
 export const FFT_SIZE       = 256;
 export const MASTER_GAIN    = 0.45;
 
+// Audio — measurement (float PCM; initial defaults, to be validated)
+export const METER_WINDOW   = 2048;  // samples per spectral frame (Blackman)
+export const METER_BANDS    = [[20, 200], [200, 2000], [2000, 12000]]; // Hz: low, mid, high
+export const DB_FLOOR       = -120;  // dBFS reported for silence
+
 // Audio — delay (tempo-synced, with filter in feedback)
 export const DELAY_TIME     = 0.37;  // seconds (overridden by tempo sync)
 export const DELAY_FEEDBACK = 0.35;

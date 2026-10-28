@@ -7,7 +7,7 @@ browser ──JSON──▶ ws://127.0.0.1:9980 (bridge) ──JSON──▶ oth
                                             └──OSC───▶ udp://127.0.0.1:7000
 ```
 
-Browser sound and external out are independent. With browser sound off and the link live, bugs keep emitting events, so an external tool can be the only sound source. An event is sent when its encounter is placed on the wall's pulse, not when it plays: the sound follows within about one beat (use `tempo` and `pulse` from the `wall` message to quantise on the receiving side). Encounters that find no free active step within one beat rest and send nothing, with or without browser sound.
+Browser sound and external out are independent. With browser sound off and the link live, bugs keep emitting events, so an external tool can be the only sound source. An event is sent when its encounter is placed on the wall's pulse, not when it plays: the sound follows within 1.25 beats (use `tempo` and `pulse` from the `wall` message to quantise on the receiving side). Encounters that find no free active step among the next five steps rest and send nothing, with or without browser sound.
 
 Every message has `v` (protocol version, `1`), `kind` and `t` (seconds since page load).
 
