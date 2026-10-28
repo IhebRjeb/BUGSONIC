@@ -15,6 +15,7 @@
     <a class="wordmark" href="./" aria-label="BUGSONIC home">BUG<span class="wordmark-orbit">S</span>ONIC</a>
     <span class="masthead-note">AUTONOMOUS LIFE<br>GENERATIVE SOUND</span>
     <div class="edition"><span class="status-dot"></span> EXP. 001 <span class="edition-divider">/</span> THE WALL <span class="edition-divider">/</span> PROTOCOL v1</div>
+    <button id="field-note" class="quiet-button field-note-button" aria-haspopup="dialog">Field note 001 <span aria-hidden="true">✎</span></button>
     <button id="focus" class="quiet-button" aria-pressed="false">Focus view <span aria-hidden="true">↗</span></button>
   </header>
 
@@ -45,6 +46,7 @@
       <div class="specimen-heading"><span id="wall-id">W-001</span><span>LIVE SURFACE · 480 × 640</span></div>
       <div class="canvas-frame">
         <canvas id="c" width="480" height="640" aria-label="Autonomous bugs exploring the wall. Drag to scratch the surface and attract the bugs."></canvas>
+        <p id="probe" class="probe" aria-hidden="true" hidden></p>
       </div>
       <div class="specimen-foot"><span class="status-dot"></span><span id="surface-state">WANDERING · SILENT</span><span class="readout"><span id="fps">--</span> FPS · <span id="ev-rate">0</span> EV/S</span></div>
       <p class="gesture-hint">Drag on the wall to scratch a crack. The creatures follow you.</p>
@@ -136,6 +138,80 @@
   </main>
 
   <footer class="page-footer"><span>A LIVING INSTRUMENT, NOT A RECORDING.</span><span class="keyboard-hints"><kbd>SPACE</kbd> sound <span>·</span> <kbd>B</kbd> creature <span>·</span> <kbd>N</kbd> surface <span>·</span> <kbd>R</kbd> restart <span>·</span> <kbd>1–9</kbd> select</span><span>JSON v1 → WS :9980 → OSC :7000</span></footer>
+
+  <dialog id="manifesto" class="field-note" aria-labelledby="note-title">
+    <article class="note-page" tabindex="-1">
+      <span class="note-tape" aria-hidden="true"></span>
+      <header class="note-head">
+        <p class="note-stamp">FIELD NOTE 001 — THE WALL</p>
+        <p class="note-meta" aria-hidden="true">specimen sheet · obs. 480×640 px · n = 4–8</p>
+      </header>
+      <div class="note-body">
+        <section class="note-text">
+          <h2 id="note-title" class="note-title">BUG<span>S</span>ONIC</h2>
+          <p class="note-motto">Small creatures.<br>Living surfaces.<br>Unstable sounds.</p>
+          <p class="note-lead">A wall is never silent.</p>
+          <p>Beneath its paint, its cracks and its scars, there is a landscape waiting to be explored.</p>
+          <p>We introduce small digital creatures into this landscape. They crawl, hesitate, collide, and listen. They read the surface through edges, shadows, textures, and fractures.</p>
+          <p class="note-lead">Every encounter leaves a trace.</p>
+          <p class="note-verse">A crack becomes a click.<br>An edge becomes a note.<br>A vibration changes the terrain.</p>
+          <p>The creatures listen to what they disturb. The surface remembers what they do. Sound becomes movement. Movement becomes sound.</p>
+          <p>There is no fixed composition. No final image. Only a living system, unfolding in real time.</p>
+          <p class="note-imperative">Observe. Disturb. Listen. Repeat.</p>
+          <p class="note-lead">The wall is your instrument.</p>
+        </section>
+        <figure class="note-specimen" aria-hidden="true">
+          <svg viewBox="0 0 320 420" class="specimen-drawing">
+            <defs>
+              <filter id="ink-wobble"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+            </defs>
+            <g class="ink" filter="url(#ink-wobble)">
+              <path class="draw d1" pathLength="1" d="M160 74c-12 0-20 9-20 21s8 21 20 21 20-9 20-21-8-21-20-21z"/>
+              <path class="draw d1" pathLength="1" d="M151 78c-14-22-30-34-48-38M169 78c14-22 30-34 48-38"/>
+              <path class="draw d2" pathLength="1" d="M160 118c-20 0-30 14-30 32s10 32 30 32 30-14 30-32-10-32-30-32z"/>
+              <path class="draw d3" pathLength="1" d="M160 184c-28 0-42 30-42 70s16 92 42 92 42-52 42-92-14-70-42-70z"/>
+              <path class="draw d3" pathLength="1" d="M124 222c24 6 48 6 72 0M120 254c27 7 53 7 80 0M122 286c25 7 51 7 76 0M130 316c20 6 40 6 60 0"/>
+              <path class="draw d4" pathLength="1" d="M132 136l-34-16-22-30M130 152l-46 4-30 26M134 170l-36 30-10 40"/>
+              <path class="draw d4" pathLength="1" d="M188 136l34-16 22-30M190 152l46 4 30 26M186 170l36 30 10 40"/>
+              <circle class="draw d4" pathLength="1" cx="76" cy="90" r="2.5"/><circle class="draw d4" pathLength="1" cx="244" cy="90" r="2.5"/>
+              <circle class="draw d4" pathLength="1" cx="54" cy="182" r="2.5"/><circle class="draw d4" pathLength="1" cx="266" cy="182" r="2.5"/>
+              <circle class="draw d4" pathLength="1" cx="88" cy="240" r="2.5"/><circle class="draw d4" pathLength="1" cx="232" cy="240" r="2.5"/>
+            </g>
+            <g class="wash"><ellipse cx="160" cy="262" rx="38" ry="80"/></g>
+            <g class="annot">
+              <path class="draw d5" pathLength="1" d="M226 44c20 4 34 10 40 22"/>
+              <text x="236" y="30">antennae —</text><text x="244" y="44">listening?</text>
+              <path class="draw d5" pathLength="1" d="M88 244c-8 18-16 30-28 40"/>
+              <text x="34" y="300">6 legs,</text><text x="34" y="314">reach 22 px</text>
+              <path class="draw d5" pathLength="1" d="M206 262h44M250 262c8 0 14 4 18 10"/>
+              <text x="238" y="292">body =</text><text x="226" y="306">FM, 2 op.</text>
+              <path class="draw d6 bracket" pathLength="1" d="M24 74v272M20 74h8M20 346h8"/>
+              <text x="4" y="366" class="small">≈ 10 px in the field</text>
+            </g>
+            <g class="annot red">
+              <path class="draw d6" pathLength="1" d="M66 402c40-5 70 3 100-2s54-6 84 0"/>
+              <text x="72" y="394">fig. 1 — reader of walls</text>
+            </g>
+          </svg>
+          <svg viewBox="0 0 320 90" class="specimen-drawing traces">
+            <g class="ink" filter="url(#ink-wobble)">
+              <path class="draw d6" pathLength="1" d="M8 30l18 4 10-8 14 10 8-2 12 12 16-6 20 8"/>
+              <path class="draw d6" pathLength="1" d="M176 34h18c6-20 10 20 16 0s10-16 14 0 8 10 12 0 6-6 10 0h18"/>
+            </g>
+            <g class="annot">
+              <text x="8" y="72" class="small">crack: darker both sides</text><text x="20" y="86">→ click</text>
+              <text x="184" y="72" class="small">edge: ∇ &gt; 0.06</text><text x="196" y="86">→ note</text>
+            </g>
+          </svg>
+        </figure>
+      </div>
+      <footer class="note-actions">
+        <button id="note-wake" class="note-wake"><span class="note-wake-label">Wake the wall</span> <span aria-hidden="true">▶ sound on</span></button>
+        <button id="note-silent" class="note-silent">Enter without sound</button>
+        <p class="note-sign">— BUGSONIC / THE WALL</p>
+      </footer>
+    </article>
+  </dialog>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

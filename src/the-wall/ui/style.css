@@ -5,6 +5,8 @@
   --ink:#1b1f1c;--muted:#474e48;--line:#a0a69a;--line-strong:#6f776f;
   --blue:#1c557d;--lime:#dbe59c;--alert:#8a2d1d;
   --mono:InstrumentMono,"Courier New",monospace;
+  --hand:"Segoe Print","Bradley Hand","Chalkboard SE","Comic Neue","Comic Sans MS",cursive;
+  --note-paper:#efe5c8;--note-ink:#23437a;--note-red:#b0413a;--note-rule:#7f9cc244;
   font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg)
 }
 *{box-sizing:border-box}
@@ -29,6 +31,8 @@ code{font:inherit;background:var(--paper);padding:1px 5px}
 .quiet-button{border:0;background:none;display:flex;gap:16px;align-items:center;font:11px var(--mono);padding:12px 0}
 .quiet-button:hover{color:var(--blue)}
 #focus{border-left:1px solid var(--line);padding-left:24px}
+.field-note-button{color:var(--blue);border-left:1px solid var(--line);padding-left:24px}
+.field-note-button span{font-size:14px;transform:rotate(-12deg)}
 .status-dot{width:6px;height:6px;display:inline-block;border-radius:50%;background:var(--blue);flex-shrink:0}
 
 /* Layout */
@@ -52,10 +56,16 @@ h1 em{font-family:Georgia,"Times New Roman",serif;letter-spacing:-.07em;color:va
 .specimen{min-width:0;align-self:start}
 .specimen-heading{display:flex;justify-content:space-between;margin-bottom:12px;color:var(--muted)}
 .canvas-frame{position:relative;padding:8px;background:var(--window);box-shadow:0 34px 60px -34px #1b2a2a99}
+/* Ruler: 16 ticks = the pulse steps read across the image; crop marks at the corners */
+.canvas-frame::before{content:"";position:absolute;inset:0 8px;pointer-events:none;background:repeating-linear-gradient(90deg,#c3c7bc99 0 1px,transparent 1px 6.25%) top/100% 5px no-repeat,repeating-linear-gradient(180deg,#c3c7bc66 0 1px,transparent 1px 5%) left/4px 100% no-repeat}
+.canvas-frame::after{content:"";position:absolute;inset:-9px;pointer-events:none;--c:var(--ink);background:linear-gradient(var(--c),var(--c)) 0 0/13px 1px,linear-gradient(var(--c),var(--c)) 0 0/1px 13px,linear-gradient(var(--c),var(--c)) 100% 0/13px 1px,linear-gradient(var(--c),var(--c)) 100% 0/1px 13px,linear-gradient(var(--c),var(--c)) 0 100%/13px 1px,linear-gradient(var(--c),var(--c)) 0 100%/1px 13px,linear-gradient(var(--c),var(--c)) 100% 100%/13px 1px,linear-gradient(var(--c),var(--c)) 100% 100%/1px 13px;background-repeat:no-repeat}
+.probe{position:absolute;left:16px;right:16px;bottom:16px;margin:0;padding:5px 9px;font:10px/1.4 var(--mono);letter-spacing:.3px;color:var(--paper);background:#1d2321d9;border-left:3px solid var(--line-strong);pointer-events:none;white-space:pre;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.probe[data-reads=edge]{border-left-color:#8fbfe6}
+.probe[data-reads=crack]{border-left-color:#e07a5f}
 #c{width:100%;height:auto;aspect-ratio:3/4;display:block;touch-action:none;cursor:crosshair}
 .specimen-foot{display:flex;gap:8px;align-items:center;margin-top:12px;color:var(--muted)}
 .readout{margin-left:auto;white-space:nowrap;color:var(--ink)}
-.gesture-hint{font:italic 14px/1.6 Georgia,serif;margin:12px 0 0;text-align:center}
+.gesture-hint{font:15px/1.6 var(--hand);color:var(--blue);margin:14px 0 0;text-align:center;transform:rotate(-1deg)}
 
 /* Console */
 .console{padding-top:30px;min-width:0}
@@ -158,6 +168,61 @@ kbd{font:9px var(--mono);border:1px solid var(--line-strong);padding:2px 5px;col
 .skip-link{position:fixed;top:-80px;left:20px;background:var(--ink);color:var(--paper);padding:15px;z-index:20}
 .skip-link:focus{top:10px}
 
+/* Field note (manifesto): a notebook page over the live wall */
+.field-note{border:0;padding:0;background:none;width:min(1080px,94vw);max-width:none;max-height:none;overflow:visible;color:var(--note-ink)}
+.field-note::backdrop{background:radial-gradient(ellipse at 50% 40%,#0c100fb3,#040505f0);backdrop-filter:grayscale(1) contrast(1.3) brightness(.6) blur(1.5px);animation:dusk .6s ease}
+.note-page{position:relative;max-height:calc(100vh - 36px);overflow:auto;padding:32px 46px 20px 92px;font:15px/26px Georgia,"Times New Roman",serif;transform:rotate(-.5deg);animation:unfold .9s cubic-bezier(.2,.8,.2,1);scrollbar-width:thin;scrollbar-color:#c9b98f transparent;
+  background:
+    linear-gradient(90deg,transparent 64px,#c2554d88 64px 65.5px,transparent 65.5px 69px,#c2554d55 69px 70px,transparent 70px),
+    repeating-linear-gradient(180deg,transparent 0 25px,var(--note-rule) 25px 26px) 0 10px,
+    radial-gradient(ellipse at 20% 10%,#fbf4df,transparent 55%),
+    radial-gradient(ellipse at 100% 100%,#d6c08c,transparent 50%),
+    radial-gradient(ellipse at 0% 100%,#dcc896,transparent 40%),
+    var(--note-paper);
+  box-shadow:0 50px 90px -30px #000,0 0 0 1px #0000001f,inset 0 0 90px #a88c4f40}
+.note-page:focus{outline:none}
+.note-page::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:url("./grain.svg");opacity:.22;mix-blend-mode:multiply}
+.note-tape{position:absolute;top:-12px;left:46%;width:132px;height:30px;transform:rotate(2.5deg);background:linear-gradient(90deg,#ebe6d2c0,#f4f0e2d9 40%,#e6e0caca);box-shadow:0 1px 3px #0003;clip-path:polygon(2% 0,98% 6%,100% 92%,0 100%)}
+.note-head{display:flex;justify-content:space-between;align-items:baseline;gap:20px;flex-wrap:wrap;margin-bottom:8px}
+.note-stamp{display:inline-block;margin:0;font:700 11px var(--mono);letter-spacing:2.4px;color:var(--note-red);border:1.5px solid currentColor;padding:3px 10px;transform:rotate(-2deg);opacity:.85}
+.note-meta{margin:0;font:13px var(--hand);color:var(--note-ink);opacity:.75}
+.note-body{display:grid;grid-template-columns:1.05fr .95fr;gap:20px 40px;align-items:start}
+.note-text p{margin:0 0 10px;max-width:46ch}
+.note-title{font:800 44px/1 "Helvetica Neue",Arial,sans-serif;letter-spacing:-2.4px;color:var(--ink);margin:4px 0 10px}
+.note-title span{display:inline-block;transform:skewY(-18deg);color:var(--note-ink)}
+.note-motto{font-weight:700;color:var(--ink);line-height:24px}
+.note-lead{font:19px/26px var(--hand)}
+.note-verse{padding-left:16px;border-left:2px solid #c2554d66;font-style:italic}
+.note-imperative{font:700 12px/26px var(--mono);letter-spacing:2.6px;text-transform:uppercase;color:var(--note-red)}
+.note-specimen{margin:0;position:relative;width:100%;max-width:410px;justify-self:center}
+.specimen-drawing{width:100%;height:auto;display:block;overflow:visible}
+.specimen-drawing.traces{margin-top:-6px}
+.specimen-drawing .ink{fill:none;stroke:var(--note-ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.specimen-drawing .wash ellipse{fill:#4f79a833;animation:wash 1.6s ease 1.6s backwards}
+.specimen-drawing .annot{fill:none;stroke:var(--note-ink);stroke-width:1;stroke-linecap:round}
+.specimen-drawing .annot text{font:14px var(--hand);fill:var(--note-ink);stroke:none;animation:wash .8s ease 2.4s backwards}
+.specimen-drawing .annot text.small{font-size:12px}
+.specimen-drawing .red{stroke:var(--note-red)}
+.specimen-drawing .red text{fill:var(--note-red)}
+.specimen-drawing .bracket{stroke-dasharray:none}
+.draw{stroke-dasharray:1;stroke-dashoffset:0;animation:ink 1.3s ease-in-out backwards}
+.d1{animation-delay:.35s}.d2{animation-delay:.7s}.d3{animation-delay:1s}.d4{animation-delay:1.4s}.d5{animation-delay:2s}.d6{animation-delay:2.5s}
+.note-actions{display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:6px;padding-top:14px;border-top:1px dashed #23437a55}
+.note-wake{display:flex;align-items:center;gap:18px;border:1.5px solid var(--note-ink);background:var(--note-ink);color:var(--note-paper);padding:13px 18px;font:13px var(--mono);letter-spacing:.4px;box-shadow:3px 3px 0 #23437a40}
+.note-wake span:last-child{font-size:10px;opacity:.7}
+.note-wake:hover{background:var(--ink);border-color:var(--ink)}
+.note-silent{border:0;background:none;padding:6px 2px;font:17px var(--hand);color:var(--note-ink);text-decoration:underline wavy #23437a77;text-underline-offset:6px}
+.note-silent:hover{color:var(--note-red)}
+.note-wake:focus-visible,.note-silent:focus-visible{outline:2px solid var(--note-red);outline-offset:4px}
+.note-sign{margin:0 0 0 auto;font:15px var(--hand);opacity:.8}
+.field-note.closing .note-page{animation:fold .5s cubic-bezier(.5,0,.8,.4) forwards}
+.field-note.closing::backdrop{animation:dusk .5s ease reverse forwards}
+@keyframes unfold{from{opacity:0;transform:translateY(46px) rotate(-3deg) scale(.96);clip-path:inset(0 0 100% 0)}60%{opacity:1}to{opacity:1;transform:rotate(-.5deg);clip-path:inset(0 0 0 0)}}
+@keyframes fold{to{opacity:0;transform:translateY(-36px) rotate(3deg) scale(.93);clip-path:inset(0 0 100% 0)}}
+@keyframes dusk{from{opacity:0}}
+@keyframes ink{from{stroke-dashoffset:1}}
+@keyframes wash{from{opacity:0}}
+
 /* Focus view */
 body.focus-mode .intro,body.focus-mode .console,body.focus-mode .external,body.focus-mode .archive,body.focus-mode .page-footer{display:none}
 body.focus-mode .instrument{display:block;padding:26px 0}
@@ -168,6 +233,7 @@ body.focus-mode .specimen{width:min(100%,540px);margin:auto}
   .instrument{column-gap:28px;grid-template-columns:minmax(180px,.75fr) minmax(270px,1.2fr) minmax(220px,.9fr)}
   h1{font-size:68px}
   .masthead-note,.keyboard-hints{display:none}
+  .note-page{padding:38px 32px 22px 78px}
   .external-grid{grid-template-columns:1fr 1fr}
   .external-col:nth-child(2){padding-right:0}
   .external-col:last-child{grid-column:1/-1;padding:20px 0 0;border-left:0;border-top:1px solid var(--line)}
@@ -184,6 +250,8 @@ body.focus-mode .specimen{width:min(100%,540px);margin:auto}
   .external-head{grid-template-columns:1fr auto}
   .external-head p{grid-column:1/-1;grid-row:2}
   .edition{font-size:9px;gap:6px}
+  .note-body{grid-template-columns:1fr}
+  .note-specimen{order:-1;max-width:340px;margin:0 auto}
 }
 @media(max-width:560px){
   body{padding-left:18px;padding-right:18px}
@@ -191,6 +259,10 @@ body.focus-mode .specimen{width:min(100%,540px);margin:auto}
   .wordmark{font-size:24px}
   .edition{order:3;width:100%;margin-top:8px}
   #focus{margin-left:auto;border:0;padding:10px 0}
+  .field-note-button{border:0;padding:10px 0}
+  .note-page{padding:34px 18px 18px 40px;transform:none;background-position:-30px 0,0 18px,0 0,0 0,0 0,0 0}
+  .note-title{font-size:36px}
+  .note-sign{margin-left:0}
   .instrument{display:flex;flex-direction:column;padding-top:24px;gap:26px}
   .intro{display:block}
   h1{font-size:clamp(40px,13vw,50px);white-space:normal}

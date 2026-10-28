@@ -75,6 +75,8 @@ BUGSONIC / THE WALL is a single-page browser application built with vanilla Java
 | **inspect** | `ui/inspect.js` | Optional overlay: edges, cracks, pulse columns and audible step |
 | **take** | `ui/take.js` | Isolated comparison takes: WAV + JSON record with validity |
 | **motion** | `ui/motion.js` | Reduced-motion preference (presentation only) |
+| **fieldnote** | `ui/fieldnote.js` | Manifesto as a notebook page (`<dialog>`): first visit only, reopened from the header; waking starts sound from the same click |
+| **probe** | `ui/probe.js` | Hover readout of the live surface: x, y, luminance, gradient, ridge depth |
 | **main** | `main.js` | Entry point: wires everything together |
 | **bridge** | `tools/bridge.js`, `tools/osc.js` | WebSocket hub and OSC forwarder; pure validation/encoding in `osc.js` |
 | **match-takes** | `tools/match-takes.js` | Offline RMS matching and anonymizing of takes |

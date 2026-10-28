@@ -23,6 +23,8 @@ import { initKeyboard } from './input/keyboard.js';
 import { initControls } from './ui/controls.js';
 import { createDashboard } from './ui/dashboard.js';
 import { initTake } from './ui/take.js';
+import { initFieldNote } from './ui/fieldnote.js';
+import { initProbe } from './ui/probe.js';
 
 // --- DOM ---
 const $ = (id) => document.getElementById(id);
@@ -148,6 +150,17 @@ initTake({
   noteLayer: $('layer-note'),
   crackLayer: $('layer-crack'),
   restart,
+});
+
+// Surface probe and the field note (manifesto)
+initProbe(cv, $('probe'));
+initFieldNote({
+  dialog: $('manifesto'),
+  wake: $('note-wake'),
+  silent: $('note-silent'),
+  reopen: $('field-note'),
+  soundOn: isStarted,
+  startSound: actions.toggleSound,
 });
 
 // --- Start: the walls/ collection, or a generated wall if it is empty ---

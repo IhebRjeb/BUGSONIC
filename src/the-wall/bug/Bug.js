@@ -159,6 +159,10 @@ export class Bug {
     }
 
     ctx.translate(this.x, this.y);
+    ctx.font = '8px ui-monospace, monospace';
+    ctx.globalAlpha = 0.75;
+    ctx.fillText(`B${this.id}`, 9, -8);
+    ctx.globalAlpha = 1;
     ctx.rotate(this.a);
     ctx.beginPath();
     ctx.ellipse(0, 0, 5 + this.flash * 3, 2.5 + this.flash, 0, 0, Math.PI * 2);

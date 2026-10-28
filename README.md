@@ -19,9 +19,10 @@ Opens at `http://localhost:5173`. The browser app has no runtime dependencies; `
 
 ## Use it
 
+0. On a first visit, **Field note 001** (the manifesto) opens over the wall: **Wake the wall** starts sound, **Enter without sound** or `Esc` closes it. Reopen it from the header.
 1. **Wake the wall** to start browser sound (requires a tap — browser policy).
 2. The photos in [walls/](walls/README.md) load at start; keys `1`-`9` switch walls. **Bring your own** adds another image for the session.
-3. **Drag** on the wall to scratch a crack. Bugs steer toward your pointer and click on cracks.
+3. **Drag** on the wall to scratch a crack. Bugs steer toward your pointer and click on cracks. Hovering shows what a bug would read there: position, luminance, edge gradient, crack depth.
 4. **Introduce a creature** / key `b` adds a bug (max 8). `n` generates a new wall. `space` toggles sound.
 5. **Record comparison take** saves 60 s + 4 s of the current wall (clean effects, seeded restart) as a float WAV with a JSON record. `npm run match-takes -- <folder>` RMS-matches and anonymizes takes for blind listening.
 
